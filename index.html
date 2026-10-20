@@ -39,6 +39,7 @@ textarea{resize:vertical;min-height:58px}
 input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
 .seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .seg button{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:8px;font:500 13px var(--f-body);cursor:pointer;text-align:left}
+.seg button.wide{grid-column:1/-1}
 .seg button[aria-pressed=true]{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
 .row{display:flex;gap:8px;align-items:center}
 .chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--muted)}
@@ -96,6 +97,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
           <button type="button" data-k="replay" aria-pressed="false">Replay / VOD</button>
           <button type="button" data-k="clip" aria-pressed="false">Short clip</button>
           <button type="button" data-k="tool" aria-pressed="false">New tool / page</button>
+          <button type="button" data-k="music" aria-pressed="false" class="wide">Music video</button>
         </div>
       </div>
 
@@ -168,6 +170,15 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
     {id:'reddit', name:'Reddit', limit:300, short:true, src:'reddit', titleOnly:true,
       open:(t,u)=>'https://www.reddit.com/submit?url='+encodeURIComponent(u)+'&title='+encodeURIComponent(t)},
     {id:'discord', name:'Discord / YouTube community', limit:2000, short:false, src:'discord', open:null},
+    {id:'yts', name:'YouTube Shorts upload', video:true, shorts:true, src:'youtube',
+      open:()=>'https://studio.youtube.com/', openLabel:'Open YouTube Studio',
+      openNote:'Upload kit: vertical video under 60 seconds. In Studio click Create → Upload videos, then paste these fields.'},
+    {id:'tt', name:'TikTok upload', video:true, shorts:true, src:'tiktok',
+      open:()=>'https://www.tiktok.com/upload', openLabel:'Open TikTok upload',
+      openNote:'Upload kit: TikTok uses one caption, so paste the description and add the tags at the end.'},
+    {id:'ig', name:'Instagram Reels upload', video:true, shorts:true, src:'instagram',
+      open:()=>'https://www.instagram.com/', openLabel:'Open Instagram',
+      openNote:'Upload kit: post as a Reel. Links in captions are not clickable, so say "link in bio" and put buyittradeit.com in your bio.'},
     {id:'dm', name:'Dailymotion upload', video:true, src:'dailymotion',
       open:()=>'https://www.dailymotion.com/', openLabel:'Open Dailymotion',
       openNote:'Upload kit: copy each field into the upload form, then attach your video file there.'},
@@ -181,7 +192,8 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
     const title=$('title').value.trim(), hook=$('extra').value.trim();
     const tagWords=$('tags').value.trim().split(/\s+/).filter(Boolean).map(t=>t.replace(/^#/,''));
     const desc=[hook, raw && !/dailymotion|twitch/i.test(raw) ? 'Full stream: '+tag(raw,p.src) : '', hub ? 'Free trading tools: '+tag(hub,p.src) : '', $('tags').value.trim()].filter(Boolean).join('\n\n');
-    return {title, desc, tags: tagWords.join(', ')};
+    const t = p.id==='yts' && !/#shorts/i.test(title) ? title+' #Shorts' : title;
+    return {title:t, desc, tags: tagWords.join(', ')};
   }
 
   function detect(url){
@@ -219,7 +231,8 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
       live:'🔴 LIVE NOW'+on+': '+title,
       replay:'Missed it? Replay is up'+on+': '+title,
       clip:title,
-      tool:'New free tool: '+title
+      tool:'New free tool: '+title,
+      music:'🎵 New track just dropped'+on+': '+title
     }[kind];
 
     if(p.titleOnly) return lead.replace(/^🔴 /,'');
@@ -234,7 +247,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
     }
     const lines = [lead];
     if(hook) lines.push(hook);
-    lines.push((kind==='live'?'Join here: ':kind==='tool'?'Try it: ':'Watch: ')+link);
+    lines.push((kind==='live'?'Join here: ':kind==='tool'?'Try it: ':kind==='music'?'Listen: ':'Watch: ')+link);
     if(hub) lines.push('All my tools and channels: '+hub);
     if(tags && p.id!=='discord') lines.push(tags);
     return lines.join('\n\n');
@@ -252,6 +265,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
     host.innerHTML = '';
     for(const k in shareFns) delete shareFns[k];
     PLATFORMS.forEach(p=>{
+      if(p.shorts && kind!=='music' && kind!=='clip') return;
       if(p.video){
         const k=kit(p);
         const el=document.createElement('article');
@@ -390,7 +404,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
     markDone(id);
   });
   $('copyAll').addEventListener('click',()=>{
-    const all = PLATFORMS.map(p=>'— '+p.name+' —\n'+(p.video ? 'Title: '+$('t_'+p.id+'_title').value+'\n'+$('t_'+p.id).value+'\nTags: '+$('t_'+p.id+'_tags').value : $('t_'+p.id).value)).join('\n\n');
+    const all = PLATFORMS.filter(p=>$('t_'+p.id)).map(p=>'— '+p.name+' —\n'+(p.video ? 'Title: '+$('t_'+p.id+'_title').value+'\n'+$('t_'+p.id).value+'\nTags: '+$('t_'+p.id+'_tags').value : $('t_'+p.id).value)).join('\n\n');
     copyText(all,'All posts copied');
   });
 
