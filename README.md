@@ -1,5 +1,7 @@
 # Go-Live Poster
 
+**Open it:** https://buyittradeit-spec.github.io/go-live-poster/
+
 A one-page helper for BuyItTradeIt streams and uploads. Paste a stream or video link once and get ready-to-post text for every channel.
 
 - X, Bluesky, Threads, Facebook, Pinterest, Reddit: a post sized for each platform, with Copy and Open buttons
