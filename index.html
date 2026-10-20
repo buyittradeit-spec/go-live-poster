@@ -49,6 +49,11 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
 .recent button{background:var(--panel-2);border:1px solid var(--line);color:var(--muted);font:12px var(--f-mono);padding:4px 8px;border-radius:3px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .recent button:hover{color:var(--fg)}
 .slips{display:grid;gap:12px}
+footer.credit{border-top:1px solid var(--line);padding-top:14px;display:grid;gap:6px;font-size:13px;color:var(--muted)}
+footer.credit p{margin:0}
+footer.credit a{color:var(--amber)}
+footer.credit .tipbtn{display:inline-block;background:var(--amber);color:var(--amber-ink);font-weight:600;text-decoration:none;border-radius:4px;padding:3px 10px;margin-right:6px}
+
 nav.top{display:flex;flex-wrap:wrap;gap:6px}
 nav.top a{font:500 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:3px;padding:4px 10px}
 nav.top a[aria-current=page]{color:var(--amber-ink);background:var(--amber);border-color:var(--amber)}
@@ -95,7 +100,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
     <form class="rail" id="form" autocomplete="off">
       <div>
         <label class="label" for="url">Link to share</label>
-        <input type="url" id="url" placeholder="https://rumble.com/..." value="https://rumble.com/c/buyittradeit">
+        <input type="url" id="url" placeholder="https://rumble.com/..." value="https://rumble.com/c/yourchannel">
         <div class="detected" id="detected"></div>
       </div>
 
@@ -112,7 +117,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
 
       <div>
         <label class="label" for="title">Title or topic</label>
-        <input type="text" id="title" value="NQ & ES morning session — CPI day game plan">
+        <input type="text" id="title" value="Morning futures session — CPI day game plan">
       </div>
 
       <div>
@@ -126,8 +131,8 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
       </div>
 
       <div>
-        <label class="label" for="hub">Hub link (added as backup)</label>
-        <input type="url" id="hub" value="https://buyittradeit.com">
+        <label class="label" for="hub">Your site or link page (optional)</label>
+        <input type="url" id="hub" placeholder="https://yoursite.com" value="">
       </div>
 
       <label class="chk"><input type="checkbox" id="utm" checked><span>Tag links per platform (adds <code>?utm_source=x</code> etc.) so your site stats show which post brought each visitor.</span></label>
@@ -144,6 +149,12 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
           <p class="note" id="schedNote">On X, tap the calendar icon in the post box to pick the time. YouTube and Rumble set it under Visibility when you upload.</p>
         </div>
       </div>
+
+      <div class="actions">
+        <button type="button" class="btn" id="saveDefaults">Save as my defaults</button>
+        <button type="button" class="btn" id="clearDefaults">Reset</button>
+      </div>
+      <p class="note" style="margin-top:-6px">Saves your link, hook, hashtags and site in this browser, so they load every time.</p>
 
       <div>
         <span class="label">Recent links</span>
@@ -163,7 +174,9 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
     </section>
   </div>
 </div>
+  <footer class="credit" id="credit"></footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="site.js"></script>
 
 <script>
 (function(){
@@ -199,7 +212,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
       openNote:'Upload kit: TikTok uses one caption, so paste the description and add the tags at the end.'},
     {id:'ig', name:'Instagram Reels upload', video:true, shorts:true, src:'instagram',
       open:()=>'https://www.instagram.com/', openLabel:'Open Instagram',
-      openNote:'Upload kit: post as a Reel. Links in captions are not clickable, so say "link in bio" and put buyittradeit.com in your bio.'},
+      openNote:'Upload kit: post as a Reel. Links in captions are not clickable, so say "link in bio" and put your site in your bio.'},
     {id:'yt', name:'YouTube upload', video:true, src:'youtube',
       open:()=>'https://studio.youtube.com/', openLabel:'Open YouTube Studio',
       openNote:'Upload kit: in Studio click Create → Upload videos. To schedule, pick Schedule under Visibility.'},
@@ -218,7 +231,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
     const raw=$('url').value.trim(), hub=$('hub').value.trim();
     const title=$('title').value.trim(), hook=$('extra').value.trim();
     const tagWords=$('tags').value.trim().split(/\s+/).filter(Boolean).map(t=>t.replace(/^#/,''));
-    const desc=[hook, raw && !/dailymotion|twitch/i.test(raw) ? 'Full stream: '+tag(raw,p.src) : '', hub ? 'Free trading tools: '+tag(hub,p.src) : '', $('tags').value.trim()].filter(Boolean).join('\n\n');
+    const desc=[hook, raw && !/dailymotion|twitch/i.test(raw) ? 'Full stream: '+tag(raw,p.src) : '', hub ? 'More links: '+tag(hub,p.src) : '', $('tags').value.trim()].filter(Boolean).join('\n\n');
     const t = p.id==='yts' && !/#shorts/i.test(title) ? title+' #Shorts' : title;
     return {title:t, desc, tags: tagWords.join(', ')};
   }
@@ -479,9 +492,25 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
   });
 
   // restore last-used hashtags/hub only (small)
-  const prefs = store.get('glp_prefs', null);
+  const DEF_IDS=['url','extra','tags','hub','utm','useHub'];
+  function loadDefaults(){
+    const d = store.get('glp_defaults', null) || store.get('glp_prefs', null);
+    if(!d) return false;
+    DEF_IDS.forEach(k=>{ if(d[k]==null) return; if($(k).type==='checkbox') $(k).checked=d[k]; else $(k).value=d[k]; });
+    $('statusText').textContent='Your defaults loaded';
+    return true;
+  }
+  $('saveDefaults').addEventListener('click',()=>{
+    const d={}; DEF_IDS.forEach(k=>d[k]=$(k).type==='checkbox'?$(k).checked:$(k).value);
+    store.set('glp_defaults',d); toast('Saved. These load every time you open the poster');
+  });
+  $('clearDefaults').addEventListener('click',()=>{
+    try{localStorage.removeItem('glp_defaults');localStorage.removeItem('glp_prefs')}catch(e){}
+    toast('Defaults cleared. Reload to see the example');
+  });
+  const prefs = null;
   if(prefs){ if(prefs.tags) $('tags').value=prefs.tags; if(prefs.hub) $('hub').value=prefs.hub; }
-  ['tags','hub'].forEach(id=>$(id).addEventListener('change',()=>store.set('glp_prefs',{tags:$('tags').value,hub:$('hub').value})));
+  loadDefaults();
 
   // pick up a post sent over from the Recap page
   const h=store.get('glp_handoff',null);

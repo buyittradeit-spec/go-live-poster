@@ -63,6 +63,11 @@ input:focus,select:focus,button:focus-visible,a:focus-visible{outline:2px solid 
 .steps{margin:0;padding-left:20px;display:grid;gap:4px;font-size:14px;color:var(--muted)}
 .steps b{color:var(--fg);font-weight:600}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;gap:10px}
+footer.credit{border-top:1px solid var(--line);padding-top:14px;display:grid;gap:6px;font-size:13px;color:var(--muted)}
+footer.credit p{margin:0}
+footer.credit a{color:var(--amber)}
+footer.credit .tipbtn{display:inline-block;background:var(--amber);color:var(--amber-ink);font-weight:600;text-decoration:none;border-radius:4px;padding:3px 10px;margin-right:6px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--amber);color:var(--amber-ink);font:600 13px var(--f-body);padding:8px 14px;border-radius:4px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
 .toast.show{opacity:1}
 
@@ -110,27 +115,28 @@ body.obs .stage{width:100vw;height:100vh}
       <form class="rail" id="form" autocomplete="off">
         <div>
           <label class="label" for="hub">Site link</label>
-          <input type="url" id="hub" value="https://buyittradeit.com">
+          <input type="url" id="hub" placeholder="https://yoursite.com" value="">
         </div>
         <div>
           <label class="label" for="line">Tagline under the link</label>
-          <input type="text" id="line" value="Std dev bands · gap fill odds · session clock">
+          <input type="text" id="line" placeholder="What viewers get there" value="Free tools, links and schedule">
         </div>
         <div>
           <label class="label" for="deals">Deals page (optional)</label>
-          <input type="url" id="deals" placeholder="https://buyittradeit.com/deals">
+          <input type="url" id="deals" placeholder="https://yoursite.com/deals">
         </div>
 
         <div class="group">
           <h2>Streamlabs</h2>
           <div>
             <label class="label" for="sluser">Streamlabs username (adds a tip-jar card)</label>
-            <input type="text" id="sluser" placeholder="buyittradeit">
+            <input type="text" id="sluser" placeholder="yourname">
           </div>
           <div>
             <label class="label" for="sltoken">Socket API token (optional, for live alerts)</label>
             <input type="password" id="sltoken" placeholder="Paste only if you want tip/follow pop-ups">
           </div>
+          <p class="note" id="slAff" hidden></p>
           <p class="note">Find it in Streamlabs under <code>Settings → API Settings → API Tokens → Your Socket API Token</code>. It stays in your OBS link only. Never post that link anywhere.</p>
         </div>
 
@@ -213,9 +219,11 @@ body.obs .stage{width:100vw;height:100vh}
         </div>
       </div>
     </div>
+    <footer class="credit" id="credit"></footer>
   </div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="site.js"></script>
 
 <template id="ovTpl">
   <div class="ov">
@@ -247,7 +255,8 @@ body.obs .stage{width:100vw;height:100vh}
   function slidesFrom(cfg){
     const s=[];
     if(cfg.hub) s.push({eb:'Free trading tools',big:pretty(cfg.hub),small:cfg.line||'',url:tagUrl(cfg.hub,'stream','qr')});
-    if(cfg.sluser) s.push({eb:'Support the stream',big:'Tip jar',small:'Tips keep the tools free',url:'https://streamlabs.com/'+encodeURIComponent(cfg.sluser.trim())+'/tip',tip:true});
+    if(cfg.sluser) s.push({eb:'Support the stream',big:'Tip jar',small:'Every tip keeps the stream going',url:'https://streamlabs.com/'+encodeURIComponent(cfg.sluser.trim())+'/tip',tip:true});
+    if(!s.length && cfg.sample) s.push({eb:'Free tools & links',big:'yoursite.com',small:'Type your link on the left',url:'https://example.com'});
     if(cfg.deals) s.push({eb:'Deals & savings',big:pretty(cfg.deals),small:'The tools and platforms I use',url:tagUrl(cfg.deals,'stream','qr')});
     return s;
   }
@@ -313,7 +322,8 @@ body.obs .stage{width:100vw;height:100vh}
   }
 
   // ---- Streamlabs socket (only when a token is given) ----
-  function connectStreamlabs(token,ovl){
+  function connectStreamlabs(token,ovl,cfg){
+    const site=cfg.hub?pretty(cfg.hub):'';
     if(!token) return;
     const s=document.createElement('script');
     s.src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js';
@@ -325,9 +335,9 @@ body.obs .stage{width:100vw;height:100vh}
         if(!m) return;
         const name=m.name||m.from||'Someone';
         if(e.type==='donation'){
-          ovl.alert('Thanks '+name+'!', (m.formatted_amount||('$'+m.amount))+' tip — it keeps the tools free',true);
+          ovl.alert('Thanks '+name+'!', (m.formatted_amount||('$'+m.amount))+' tip, thank you!',true);
         } else if(e.type==='follow'){
-          ovl.alert('Welcome '+name+'!','Free tools at buyittradeit.com',false);
+          ovl.alert('Welcome '+name+'!',site?'Links at '+site:'Glad you are here',false);
         } else if(e.type==='subscription'||e.type==='membership'||e.type==='superchat'){
           ovl.alert('Thanks '+name+'!','Appreciate the support',true);
         }
@@ -342,13 +352,16 @@ body.obs .stage{width:100vw;height:100vh}
     $('builder').remove();
     const stage=document.createElement('div');stage.className='stage';document.body.appendChild(stage);
     const cfg={};FIELDS.forEach(k=>cfg[k]=P.get(k)||'');
-    if(!cfg.hub && !cfg.sluser && !cfg.deals) cfg.hub='https://buyittradeit.com';
     const ovl=Overlay(stage,cfg);
-    connectStreamlabs(P.get('sl')||'',ovl);
+    connectStreamlabs(P.get('sl')||'',ovl,cfg);
     return;
   }
 
   // ===== BUILDER MODE =====
+  if(window.GLP && GLP.streamlabsAff){
+    const n=$('slAff'); n.hidden=false;
+    n.innerHTML='Don’t use Streamlabs yet? <a href="'+GLP.streamlabsAff+'" target="_blank" rel="noopener sponsored" style="color:var(--amber)">Get Streamlabs here</a> (affiliate link).';
+  }
   const saved=store.get('ovl_cfg',null);
   if(saved) FIELDS.forEach(k=>{if(saved[k]!=null&&$(k)) $(k).value=saved[k]});
   $('qrsizeVal').textContent=$('qrsize').value;
@@ -368,7 +381,8 @@ body.obs .stage{width:100vw;height:100vh}
     store.set('ovl_cfg',c);
     if(ovl) ovl.destroy();
     // preview always visible so you can see it
-    ovl=Overlay(stage,Object.assign({},c,{every:'0'}));
+    ovl=Overlay(stage,Object.assign({},c,{every:'0',sample:true}));
+    $('copyUrl').disabled=!(c.hub||c.sluser||c.deals);
     const link=obsLink();
     const tok=$('sltoken').value.trim();
     $('obsUrl').textContent=tok?link.replace(encodeURIComponent(tok),'••••••••'):link;
@@ -376,8 +390,8 @@ body.obs .stage{width:100vw;height:100vh}
   }
   FIELDS.concat(['sltoken']).forEach(k=>$(k).addEventListener('input',()=>{ if(k==='qrsize') $('qrsizeVal').textContent=$('qrsize').value; refresh(); }));
   $('form').addEventListener('submit',e=>e.preventDefault());
-  $('testTip').addEventListener('click',()=>ovl&&ovl.alert('Thanks TraderMike!','$5.00 tip — it keeps the tools free',true));
-  $('testFollow').addEventListener('click',()=>ovl&&ovl.alert('Welcome NQ_Nate!','Free tools at buyittradeit.com',false));
+  $('testTip').addEventListener('click',()=>ovl&&ovl.alert('Thanks TraderMike!','$5.00 tip, thank you!',true));
+  $('testFollow').addEventListener('click',()=>ovl&&ovl.alert('Welcome NQ_Nate!',$('hub').value.trim()?'Links at '+pretty($('hub').value.trim()):'Glad you are here',false));
 
   let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800)}
   $('copyUrl').addEventListener('click',()=>{
