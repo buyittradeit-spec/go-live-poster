@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BuyItTradeIt Go-Live Poster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: pit-board console — input rail on the left, a stack of per-platform post slips on the right; single dark look by choice to match the hub */
+:root{
+  --bg:#121110; --panel:#1b1916; --panel-2:#23201c; --line:#3a342b;
+  --fg:#ece6dc; --muted:#a39888; --amber:#f2a33a; --amber-ink:#1a1206;
+  --live:#e5484d; --ok:#4cc38a; --warn:#f2a33a;
+  --f-display:"Chakra Petch", "Arial Narrow", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:14px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(26px,4vw,38px);letter-spacing:.02em;margin:0;line-height:1.05;text-wrap:balance;text-transform:uppercase}
+h1 span{color:var(--amber)}
+.sub{color:var(--muted);margin:4px 0 0;max-width:62ch}
+.status{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--live);box-shadow:0 0 0 0 var(--live);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(229,72,77,.6)}70%{box-shadow:0 0 0 8px rgba(229,72,77,0)}100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+.grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.rail{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;gap:14px}
+@media (min-width:861px){.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}}
+.label{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:5px}
+input[type=text],input[type=url],textarea,select{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:9px 10px;font:inherit;font-size:14px}
+textarea{resize:vertical;min-height:58px}
+input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.seg button{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:8px;font:500 13px var(--f-body);cursor:pointer;text-align:left}
+.seg button[aria-pressed=true]{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
+.row{display:flex;gap:8px;align-items:center}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--muted)}
+.chk input{margin-top:3px;accent-color:var(--amber)}
+.detected{font-family:var(--f-mono);font-size:12px;color:var(--amber);min-height:1em;margin-top:4px}
+.recent{display:flex;flex-wrap:wrap;gap:6px}
+.recent button{background:var(--panel-2);border:1px solid var(--line);color:var(--muted);font:12px var(--f-mono);padding:4px 8px;border-radius:3px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recent button:hover{color:var(--fg)}
+.slips{display:grid;gap:12px}
+.slip{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:4px;padding:14px;display:grid;gap:10px;min-width:0}
+.slip.over{border-left-color:var(--live)}
+.slip-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center}
+.slip h2{font-family:var(--f-display);font-weight:500;font-size:17px;letter-spacing:.06em;text-transform:uppercase;margin:0}
+.count{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ok)}
+.slip.over .count{color:var(--live);border-color:var(--live)}
+.slip textarea{font-family:var(--f-body);font-size:14px;min-height:96px;background:var(--bg)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:600 13px var(--f-body);padding:8px 12px;border-radius:4px;border:1px solid var(--line);background:var(--panel-2);color:var(--fg);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--amber)}
+.btn.primary{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
+.btn.primary:hover{filter:brightness(1.08)}
+.note{font-size:12px;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--amber);color:var(--amber-ink);font:600 13px var(--f-body);padding:8px 14px;border-radius:4px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.bulk{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;background:var(--panel-2);border:1px dashed var(--line);border-radius:4px;padding:10px 12px}
+.bulk p{margin:0;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Go-Live <span>Poster</span></h1>
+      <p class="sub">Paste your stream or video link once. Get a ready post for every channel, then copy or open each one. No AI, no server, nothing stored except your last few links on this device.</p>
+    </div>
+    <div class="status"><span class="dot" aria-hidden="true"></span><span id="statusText">Example loaded</span></div>
+  </header>
+
+  <div class="grid">
+    <form class="rail" id="form" autocomplete="off">
+      <div>
+        <label class="label" for="url">Link to share</label>
+        <input type="url" id="url" placeholder="https://rumble.com/..." value="https://rumble.com/c/buyittradeit">
+        <div class="detected" id="detected"></div>
+      </div>
+
+      <div>
+        <span class="label">Post type</span>
+        <div class="seg" id="kind">
+          <button type="button" data-k="live" aria-pressed="true">Going live</button>
+          <button type="button" data-k="replay" aria-pressed="false">Replay / VOD</button>
+          <button type="button" data-k="clip" aria-pressed="false">Short clip</button>
+          <button type="button" data-k="tool" aria-pressed="false">New tool / page</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="label" for="title">Title or topic</label>
+        <input type="text" id="title" value="NQ & ES morning session — CPI day game plan">
+      </div>
+
+      <div>
+        <label class="label" for="extra">One-line hook (optional)</label>
+        <textarea id="extra" rows="2">Live levels, gap-fill odds and the std dev bands I'm watching.</textarea>
+      </div>
+
+      <div>
+        <label class="label" for="tags">Hashtags</label>
+        <input type="text" id="tags" value="#futures #daytrading #NQ #ES">
+      </div>
+
+      <div>
+        <label class="label" for="hub">Hub link (added as backup)</label>
+        <input type="url" id="hub" value="https://buyittradeit.com">
+      </div>
+
+      <label class="chk"><input type="checkbox" id="utm" checked><span>Tag links per platform (adds <code>?utm_source=x</code> etc.) so your site stats show which post brought each visitor.</span></label>
+      <label class="chk"><input type="checkbox" id="useHub" checked><span>Include hub link in longer posts</span></label>
+
+      <div>
+        <span class="label">Recent links</span>
+        <div class="recent" id="recent"><span class="note">Links you post appear here.</span></div>
+      </div>
+    </form>
+
+    <section class="slips" aria-label="Posts by platform">
+      <div class="bulk">
+        <p>Edit any post below before sharing. Edits stay until you change the inputs.</p>
+        <button type="button" class="btn" id="copyAll">Copy all posts</button>
+      </div>
+      <div id="slips" class="slips"></div>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const store = {
+    get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+    set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+  };
+
+  const PLATFORMS = [
+    {id:'x', name:'X / Twitter', limit:280, short:true, src:'x',
+      open:(t)=>'https://twitter.com/intent/tweet?text='+encodeURIComponent(t)},
+    {id:'bsky', name:'Bluesky', limit:300, short:true, src:'bluesky',
+      open:(t)=>'https://bsky.app/intent/compose?text='+encodeURIComponent(t)},
+    {id:'threads', name:'Threads', limit:500, short:true, src:'threads',
+      open:(t)=>'https://www.threads.net/intent/post?text='+encodeURIComponent(t)},
+    {id:'fb', name:'Facebook', limit:0, short:false, src:'facebook',
+      open:(t,u)=>'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(u), openNote:'Facebook only takes the link. Copy the text first, then paste it in.'},
+    {id:'pin', name:'Pinterest', limit:500, short:false, src:'pinterest', noTags:false,
+      open:(t,u)=>'https://www.pinterest.com/pin/create/button/?url='+encodeURIComponent(u)+'&description='+encodeURIComponent(t)},
+    {id:'reddit', name:'Reddit', limit:300, short:true, src:'reddit', titleOnly:true,
+      open:(t,u)=>'https://www.reddit.com/submit?url='+encodeURIComponent(u)+'&title='+encodeURIComponent(t)},
+    {id:'discord', name:'Discord / YouTube community', limit:2000, short:false, src:'discord', open:null},
+    {id:'dm', name:'Dailymotion upload', video:true, src:'dailymotion',
+      open:()=>'https://www.dailymotion.com/', openLabel:'Open Dailymotion',
+      openNote:'Upload kit: copy each field into the upload form, then attach your video file there.'},
+    {id:'tw', name:'Twitch video upload', video:true, src:'twitch',
+      open:()=>'https://dashboard.twitch.tv/', openLabel:'Open Twitch dashboard',
+      openNote:'Upload kit: in the dashboard go to Content → Video Producer → Upload, then paste these fields.'}
+  ];
+
+  function kit(p){
+    const raw=$('url').value.trim(), hub=$('hub').value.trim();
+    const title=$('title').value.trim(), hook=$('extra').value.trim();
+    const tagWords=$('tags').value.trim().split(/\s+/).filter(Boolean).map(t=>t.replace(/^#/,''));
+    const desc=[hook, raw && !/dailymotion|twitch/i.test(raw) ? 'Full stream: '+tag(raw,p.src) : '', hub ? 'Free trading tools: '+tag(hub,p.src) : '', $('tags').value.trim()].filter(Boolean).join('\n\n');
+    return {title, desc, tags: tagWords.join(', ')};
+  }
+
+  function detect(url){
+    const u = url.toLowerCase();
+    if(u.includes('rumble.com')) return 'Rumble';
+    if(u.includes('youtube.com')||u.includes('youtu.be')) return 'YouTube';
+    if(u.includes('twitch.tv')) return 'Twitch';
+    if(u.includes('kick.com')) return 'Kick';
+    if(u.includes('x.com')||u.includes('twitter.com')) return 'X';
+    if(u.includes('buyitprintables')) return 'BuyIt Printables';
+    if(u.includes('buyittradeit')) return 'BuyItTradeIt';
+    return '';
+  }
+
+  function tag(url, src){
+    if(!$('utm').checked || !url) return url;
+    try{const u=new URL(url);u.searchParams.set('utm_source',src);u.searchParams.set('utm_medium','social');return u.toString()}
+    catch(e){return url}
+  }
+
+  let kind = 'live';
+  const edited = {};
+
+  function build(p){
+    const raw = $('url').value.trim();
+    const where = detect(raw);
+    const title = $('title').value.trim();
+    const hook = $('extra').value.trim();
+    const tags = $('tags').value.trim();
+    const link = tag(raw, p.src);
+    const hub = $('useHub').checked && $('hub').value.trim() ? tag($('hub').value.trim(), p.src) : '';
+    const on = where && !/BuyIt/.test(where) ? ' on '+where : '';
+
+    const lead = {
+      live:'🔴 LIVE NOW'+on+': '+title,
+      replay:'Missed it? Replay is up'+on+': '+title,
+      clip:title,
+      tool:'New free tool: '+title
+    }[kind];
+
+    if(p.titleOnly) return lead.replace(/^🔴 /,'');
+
+    if(p.short){
+      let body = [lead, hook, link, tags].filter(Boolean).join('\n\n');
+      // trim hook first, then tags, to fit limit (links count as 23 on X)
+      const len = s => p.id==='x' ? xLen(s) : s.length;
+      if(len(body) > p.limit) body = [lead, link, tags].filter(Boolean).join('\n\n');
+      if(len(body) > p.limit) body = [lead, link].join('\n\n');
+      return body;
+    }
+    const lines = [lead];
+    if(hook) lines.push(hook);
+    lines.push((kind==='live'?'Join here: ':kind==='tool'?'Try it: ':'Watch: ')+link);
+    if(hub) lines.push('All my tools and channels: '+hub);
+    if(tags && p.id!=='discord') lines.push(tags);
+    return lines.join('\n\n');
+  }
+
+  function xLen(s){ return s.replace(/https?:\/\/\S+/g,'x'.repeat(23)).length; }
+  function lenFor(p,s){ return p.id==='x' ? xLen(s) : s.length; }
+
+  function render(){
+    const raw = $('url').value.trim();
+    const d = detect(raw);
+    $('detected').textContent = raw ? (d ? 'Detected: '+d : 'Link looks custom; posts will still work') : 'Paste a link to start';
+    $('statusText').textContent = kind==='live' ? 'Ready to go live' : 'Ready to post';
+    const host = $('slips');
+    host.innerHTML = '';
+    PLATFORMS.forEach(p=>{
+      if(p.video){
+        const k=kit(p);
+        const el=document.createElement('article');
+        el.className='slip';
+        el.innerHTML='<div class="slip-head"><h2>'+p.name+'</h2><span class="count">video kit</span></div>'+
+          '<div><span class="label">Title</span><input type="text" id="t_'+p.id+'_title"></div>'+
+          '<div><span class="label">Description</span><textarea id="t_'+p.id+'" rows="5"></textarea></div>'+
+          '<div><span class="label">Tags</span><input type="text" id="t_'+p.id+'_tags"></div>'+
+          '<div class="actions"></div><p class="note">'+p.openNote+'</p>';
+        el.querySelector('#t_'+p.id+'_title').value=k.title;
+        el.querySelector('#t_'+p.id).value=k.desc;
+        el.querySelector('#t_'+p.id+'_tags').value=k.tags;
+        const acts=el.querySelector('.actions');
+        [['Copy title','_title'],['Copy description',''],['Copy tags','_tags']].forEach(([lbl,suf])=>{
+          const b=document.createElement('button'); b.type='button'; b.className='btn'; b.textContent=lbl;
+          b.onclick=()=>{const f=el.querySelector('#t_'+p.id+suf); copyText(f.value, lbl.replace('Copy ','')+' copied', f);};
+          acts.appendChild(b);
+        });
+        const a=document.createElement('a'); a.className='btn primary'; a.target='_blank'; a.rel='noopener';
+        a.textContent=p.openLabel; a.href=p.open(); acts.appendChild(a);
+        host.appendChild(el);
+        return;
+      }
+      const text = edited[p.id] ?? build(p);
+      const shareUrl = tag(raw, p.src);
+      const el = document.createElement('article');
+      el.className = 'slip';
+      el.innerHTML =
+        '<div class="slip-head"><h2>'+p.name+'</h2><span class="count"></span></div>'+
+        '<textarea id="t_'+p.id+'" aria-label="'+p.name+' post"></textarea>'+
+        '<div class="actions"></div>'+
+        (p.openNote?'<p class="note">'+p.openNote+'</p>':'');
+      const ta = el.querySelector('textarea');
+      ta.value = text;
+      const count = el.querySelector('.count');
+      const upd = ()=>{
+        const n = lenFor(p, ta.value);
+        count.textContent = p.limit ? n+' / '+p.limit : n+' chars';
+        el.classList.toggle('over', !!p.limit && n>p.limit);
+      };
+      ta.addEventListener('input', ()=>{ edited[p.id]=ta.value; upd(); refreshLink(); });
+      upd();
+
+      const acts = el.querySelector('.actions');
+      const copy = document.createElement('button');
+      copy.type='button'; copy.className='btn'; copy.textContent='Copy';
+      copy.onclick = ()=>copyText(ta.value, p.name+' post copied', ta);
+      acts.appendChild(copy);
+
+      let a;
+      function refreshLink(){ if(a) a.href = p.open(ta.value, shareUrl); }
+      if(p.open){
+        a = document.createElement('a');
+        a.className='btn primary'; a.target='_blank'; a.rel='noopener';
+        a.textContent='Open in '+p.name.split(' /')[0];
+        a.addEventListener('click', ()=>{ remember(raw); if(p.id==='fb') copyText(ta.value,'Text copied, paste it into Facebook',ta); });
+        acts.appendChild(a);
+        refreshLink();
+      }
+      host.appendChild(el);
+    });
+  }
+
+  function copyText(t, msg, ta){
+    const done=()=>{ toast(msg); remember($('url').value.trim()); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(done).catch(()=>{ if(ta){ta.focus();ta.select();} toast('Selected. Press Ctrl+C / Cmd+C to copy'); });
+    } else { if(ta){ta.focus();ta.select();} toast('Selected. Press Ctrl+C / Cmd+C to copy'); }
+  }
+
+  let tt;
+  function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),1800); }
+
+  function remember(url){
+    if(!url) return;
+    let r = store.get('glp_recent', []).filter(x=>x.url!==url);
+    r.unshift({url, title:$('title').value.trim(), kind});
+    r = r.slice(0,8);           // keep it tiny
+    store.set('glp_recent', r);
+    drawRecent();
+  }
+  function drawRecent(){
+    const r = store.get('glp_recent', []);
+    const box = $('recent');
+    if(!r.length){ box.innerHTML='<span class="note">Links you post appear here.</span>'; return; }
+    box.innerHTML='';
+    r.forEach(x=>{
+      const b=document.createElement('button'); b.type='button';
+      b.textContent=(x.title||x.url).slice(0,40); b.title=x.url;
+      b.onclick=()=>{ $('url').value=x.url; $('title').value=x.title||''; setKind(x.kind||'live'); clearEdits(); render(); };
+      box.appendChild(b);
+    });
+  }
+
+  function clearEdits(){ for(const k in edited) delete edited[k]; }
+  function setKind(k){
+    kind=k;
+    document.querySelectorAll('#kind button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.k===k));
+  }
+
+  document.querySelectorAll('#kind button').forEach(b=>b.addEventListener('click',()=>{ setKind(b.dataset.k); clearEdits(); render(); }));
+  ['url','title','extra','tags','hub','utm','useHub'].forEach(id=>$(id).addEventListener('input',()=>{ clearEdits(); render(); }));
+  $('utm').addEventListener('change',()=>{ clearEdits(); render(); });
+  $('useHub').addEventListener('change',()=>{ clearEdits(); render(); });
+  $('form').addEventListener('submit', e=>e.preventDefault());
+  $('copyAll').addEventListener('click',()=>{
+    const all = PLATFORMS.map(p=>'— '+p.name+' —\n'+(p.video ? 'Title: '+$('t_'+p.id+'_title').value+'\n'+$('t_'+p.id).value+'\nTags: '+$('t_'+p.id+'_tags').value : $('t_'+p.id).value)).join('\n\n');
+    copyText(all,'All posts copied');
+  });
+
+  // restore last-used hashtags/hub only (small)
+  const prefs = store.get('glp_prefs', null);
+  if(prefs){ if(prefs.tags) $('tags').value=prefs.tags; if(prefs.hub) $('hub').value=prefs.hub; }
+  ['tags','hub'].forEach(id=>$(id).addEventListener('change',()=>store.set('glp_prefs',{tags:$('tags').value,hub:$('hub').value})));
+
+  drawRecent();
+  render();
+})();
+</script>
+</body>
+</html>
