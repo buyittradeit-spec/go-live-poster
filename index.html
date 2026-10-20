@@ -61,6 +61,9 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
 .btn.primary{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
 .btn.primary:hover{filter:brightness(1.08)}
 .note{font-size:12px;color:var(--muted)}
+.tick{display:none;font:500 11px var(--f-mono);letter-spacing:.08em;color:var(--ok);border:1px solid var(--ok);border-radius:3px;padding:1px 6px;margin-left:6px;vertical-align:middle}
+.slip.done .tick{display:inline-block}
+.slip.done{border-left-color:var(--ok)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--amber);color:var(--amber-ink);font:600 13px var(--f-body);padding:8px 14px;border-radius:4px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
 .bulk{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;background:var(--panel-2);border:1px dashed var(--line);border-radius:4px;padding:10px 12px}
@@ -127,8 +130,11 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
 
     <section class="slips" aria-label="Posts by platform">
       <div class="bulk">
-        <p>Edit any post below before sharing. Edits stay until you change the inputs.</p>
-        <button type="button" class="btn" id="copyAll">Copy all posts</button>
+        <p>Edit any post below, then hit Post everywhere. Each click opens the next site.</p>
+        <div class="actions">
+          <a class="btn primary" id="walk" target="_blank" rel="noopener" href="#">Post everywhere</a>
+          <button type="button" class="btn" id="copyAll">Copy all posts</button>
+        </div>
       </div>
       <div id="slips" class="slips"></div>
     </section>
@@ -152,7 +158,11 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
     {id:'threads', name:'Threads', limit:500, short:true, src:'threads',
       open:(t)=>'https://www.threads.net/intent/post?text='+encodeURIComponent(t)},
     {id:'fb', name:'Facebook', limit:0, short:false, src:'facebook',
-      open:(t,u)=>'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(u), openNote:'Facebook only takes the link. Copy the text first, then paste it in.'},
+      open:(t,u)=>'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(u), copyFirst:true, openNote:'Facebook only takes the link. Opening it copies your text, so just paste.'},
+    {id:'li', name:'LinkedIn', limit:3000, short:false, src:'linkedin',
+      open:(t,u)=>'https://www.linkedin.com/sharing/share-offsite/?url='+encodeURIComponent(u), copyFirst:true, openNote:'LinkedIn only takes the link. Opening it copies your text, so just paste.'},
+    {id:'tg', name:'Telegram', limit:4000, short:false, src:'telegram',
+      open:(t,u)=>'https://t.me/share/url?url='+encodeURIComponent(u)+'&text='+encodeURIComponent(t.replace(u,'').trim())},
     {id:'pin', name:'Pinterest', limit:500, short:false, src:'pinterest', noTags:false,
       open:(t,u)=>'https://www.pinterest.com/pin/create/button/?url='+encodeURIComponent(u)+'&description='+encodeURIComponent(t)},
     {id:'reddit', name:'Reddit', limit:300, short:true, src:'reddit', titleOnly:true,
@@ -240,6 +250,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
     $('statusText').textContent = kind==='live' ? 'Ready to go live' : 'Ready to post';
     const host = $('slips');
     host.innerHTML = '';
+    for(const k in shareFns) delete shareFns[k];
     PLATFORMS.forEach(p=>{
       if(p.video){
         const k=kit(p);
@@ -269,7 +280,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
       const el = document.createElement('article');
       el.className = 'slip';
       el.innerHTML =
-        '<div class="slip-head"><h2>'+p.name+'</h2><span class="count"></span></div>'+
+        '<div class="slip-head"><h2>'+p.name+' <span class="tick">Posted</span></h2><span class="count"></span></div>'+
         '<textarea id="t_'+p.id+'" aria-label="'+p.name+' post"></textarea>'+
         '<div class="actions"></div>'+
         (p.openNote?'<p class="note">'+p.openNote+'</p>':'');
@@ -281,7 +292,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
         count.textContent = p.limit ? n+' / '+p.limit : n+' chars';
         el.classList.toggle('over', !!p.limit && n>p.limit);
       };
-      ta.addEventListener('input', ()=>{ edited[p.id]=ta.value; upd(); refreshLink(); });
+      ta.addEventListener('input', ()=>{ edited[p.id]=ta.value; upd(); refreshLink(); updateWalker(); });
       upd();
 
       const acts = el.querySelector('.actions');
@@ -292,16 +303,39 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
 
       let a;
       function refreshLink(){ if(a) a.href = p.open(ta.value, shareUrl); }
+      shareFns[p.id] = ()=>({href:p.open(ta.value, shareUrl), text:ta.value, ta});
+      if(done.has(p.id)) el.classList.add('done');
+      el.id='slip_'+p.id;
       if(p.open){
         a = document.createElement('a');
         a.className='btn primary'; a.target='_blank'; a.rel='noopener';
         a.textContent='Open in '+p.name.split(' /')[0];
-        a.addEventListener('click', ()=>{ remember(raw); if(p.id==='fb') copyText(ta.value,'Text copied, paste it into Facebook',ta); });
+        a.addEventListener('click', ()=>{ remember(raw); markDone(p.id); if(p.copyFirst) copyText(ta.value,'Text copied, paste it into '+p.name,ta); });
         acts.appendChild(a);
         refreshLink();
       }
       host.appendChild(el);
     });
+    updateWalker();
+  }
+
+  // Post everywhere: one click opens one site (browsers block more), then the button moves to the next
+  const shareFns = {};
+  const done = new Set();
+  function order(){ return PLATFORMS.filter(p=>p.open && !p.video).map(p=>p.id); }
+  function nextId(){ return order().find(id=>!done.has(id)); }
+  function markDone(id){
+    done.add(id);
+    const el=$('slip_'+id); if(el) el.classList.add('done');
+    setTimeout(updateWalker,0);
+  }
+  function updateWalker(){
+    const w=$('walk'), ids=order(), id=nextId();
+    if(!id){ w.textContent='All posted ✓ — Start over'; w.removeAttribute('href'); w.dataset.reset='1'; return; }
+    delete w.dataset.reset;
+    const p=PLATFORMS.find(x=>x.id===id);
+    w.textContent='Post everywhere: open '+p.name.split(' /')[0]+' ('+(ids.indexOf(id)+1)+'/'+ids.length+')';
+    w.href=shareFns[id] ? shareFns[id]().href : '#';
   }
 
   function copyText(t, msg, ta){
@@ -346,6 +380,15 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
   $('utm').addEventListener('change',()=>{ clearEdits(); render(); });
   $('useHub').addEventListener('change',()=>{ clearEdits(); render(); });
   $('form').addEventListener('submit', e=>e.preventDefault());
+  $('walk').addEventListener('click', e=>{
+    const w=$('walk');
+    if(w.dataset.reset){ e.preventDefault(); done.clear(); document.querySelectorAll('.slip.done').forEach(x=>x.classList.remove('done')); updateWalker(); return; }
+    const id=nextId(); if(!id) return;
+    const p=PLATFORMS.find(x=>x.id===id), s=shareFns[id]();
+    remember($('url').value.trim());
+    if(p.copyFirst) copyText(s.text,'Text copied, paste it into '+p.name,s.ta);
+    markDone(id);
+  });
   $('copyAll').addEventListener('click',()=>{
     const all = PLATFORMS.map(p=>'— '+p.name+' —\n'+(p.video ? 'Title: '+$('t_'+p.id+'_title').value+'\n'+$('t_'+p.id).value+'\nTags: '+$('t_'+p.id+'_tags').value : $('t_'+p.id).value)).join('\n\n');
     copyText(all,'All posts copied');
