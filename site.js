@@ -4,7 +4,8 @@ window.GLP = {
   maker: 'BuyItTradeIt',
   site: 'https://buyittradeit.com',
   tipJar: 'https://ko-fi.com/J4V128ZBWE',
-  streamlabsAff: 'https://streamlabs.pxf.io/enGjyX'
+  streamlabsAff: 'https://streamlabs.pxf.io/enGjyX',
+  promo: { url: 'https://buyitprintables.com/', name: 'BuyIt Printables', text: 'Need thumbnails, stickers or printables for your channel? Free AI makers and printables.' }
 };
 
 (function () {
@@ -24,7 +25,9 @@ window.GLP = {
     if (G.streamlabsAff) btns.push('<a class="tipbtn alt" href="' + G.streamlabsAff + '" target="_blank" rel="noopener sponsored">Get Streamlabs</a>');
     if (btns.length) bits.push('<span class="footbtns">' + btns.join('') + '</span><span class="footnote">Tips keep these tools free. Streaming? Streamlabs runs the tip jar and alerts this overlay hooks into.</span>');
     if (G.streamlabsAff) bits.push('Some links are affiliate links. I may earn a commission at no cost to you.');
-    f.innerHTML = bits.map(function (b) { return '<p>' + b + '</p>'; }).join('');
+    var html = bits.map(function (b) { return '<p>' + b + '</p>'; }).join('');
+    if (G.promo && G.promo.url) html += '<a class="promo" href="' + tagged(G.promo.url, 'footer-ad') + '" target="_blank" rel="noopener"><span class="promo-tag">Also from ' + G.maker + '</span><b>' + G.promo.name + ' →</b><span>' + G.promo.text + '</span></a>';
+    f.innerHTML = html;
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', footer); else footer();
 })();
