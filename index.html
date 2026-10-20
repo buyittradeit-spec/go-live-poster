@@ -52,7 +52,11 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
 footer.credit{border-top:1px solid var(--line);padding-top:14px;display:grid;gap:6px;font-size:13px;color:var(--muted)}
 footer.credit p{margin:0}
 footer.credit a{color:var(--amber)}
-footer.credit .tipbtn{display:inline-block;background:var(--amber);color:var(--amber-ink);font-weight:600;text-decoration:none;border-radius:4px;padding:3px 10px;margin-right:6px}
+footer.credit .footbtns{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px}
+footer.credit .tipbtn{display:inline-flex;align-items:center;gap:8px;background:var(--amber);color:var(--amber-ink);font:700 18px var(--f-display);letter-spacing:.04em;text-transform:uppercase;text-decoration:none;border-radius:6px;padding:12px 22px;border:2px solid var(--amber)}
+footer.credit .tipbtn:hover{filter:brightness(1.08)}
+footer.credit .tipbtn.alt{background:transparent;color:var(--amber)}
+footer.credit .footnote{display:block}
 
 nav.top{display:flex;flex-wrap:wrap;gap:6px}
 nav.top a{font:500 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:3px;padding:4px 10px}
@@ -176,7 +180,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
 </div>
   <footer class="credit" id="credit"></footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="site.js"></script>
+<script src="site.js?v=3"></script>
 
 <script>
 (function(){

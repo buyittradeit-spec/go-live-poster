@@ -19,7 +19,10 @@ window.GLP = {
     if (!f) return;
     var G = window.GLP, bits = [];
     bits.push('Free tool made by <a href="' + tagged(G.site, 'credit') + '" target="_blank" rel="noopener">' + G.maker + '</a>. No sign-up, no fees, nothing leaves your browser.');
-    if (G.tipJar) bits.push('<a class="tipbtn" href="' + G.tipJar + '" target="_blank" rel="noopener">Tip jar</a> Tips keep these tools free.');
+    var btns = [];
+    if (G.tipJar) btns.push('<a class="tipbtn" href="' + G.tipJar + '" target="_blank" rel="noopener">☕ Tip jar</a>');
+    if (G.streamlabsAff) btns.push('<a class="tipbtn alt" href="' + G.streamlabsAff + '" target="_blank" rel="noopener sponsored">Get Streamlabs</a>');
+    if (btns.length) bits.push('<span class="footbtns">' + btns.join('') + '</span><span class="footnote">Tips keep these tools free. Streaming? Streamlabs runs the tip jar and alerts this overlay hooks into.</span>');
     if (G.streamlabsAff) bits.push('Some links are affiliate links. I may earn a commission at no cost to you.');
     f.innerHTML = bits.map(function (b) { return '<p>' + b + '</p>'; }).join('');
   }
