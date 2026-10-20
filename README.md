@@ -7,6 +7,7 @@ A one-page helper for BuyItTradeIt streams and uploads. Paste a stream or video 
 - X, Bluesky, Threads, Facebook, Pinterest, Reddit: a post sized for each platform, with Copy and Open buttons
 - Discord / YouTube community: a longer post to paste in
 - Dailymotion and Twitch: upload kits with title, description and tags to copy into the upload form
+- Link in reply (on by default): X, Threads, Facebook and LinkedIn get a main post with no link plus a separate first reply/comment holding the link, since those sites show link posts to fewer people
 - Optional per-platform link tags (`utm_source`) so site stats show which post sent each visitor
 
 No server, no API keys, no AI calls. The page keeps only your last 8 links and your hashtags in your own browser.

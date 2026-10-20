@@ -73,6 +73,7 @@ nav.top a:hover{color:var(--fg)}
 .count{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ok)}
 .slip.over .count{color:var(--live);border-color:var(--live)}
 .slip textarea{font-family:var(--f-body);font-size:14px;min-height:96px;background:var(--bg)}
+.slip textarea[id^=r_]{min-height:52px}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 .btn{font:600 13px var(--f-body);padding:8px 12px;border-radius:4px;border:1px solid var(--line);background:var(--panel-2);color:var(--fg);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
 .btn:hover{border-color:var(--amber)}
@@ -145,6 +146,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
 
       <label class="chk"><input type="checkbox" id="utm" checked><span>Tag links per platform (adds <code>?utm_source=x</code> etc.) so your site stats show which post brought each visitor.</span></label>
       <label class="chk"><input type="checkbox" id="useHub" checked><span>Include hub link in longer posts</span></label>
+      <label class="chk"><input type="checkbox" id="replyMode" checked><span><strong>Link in reply</strong> on X, Threads, Facebook and LinkedIn. Those sites show posts with links to fewer people, so the main post gets no link and you paste the link as your first reply.</span></label>
 
       <div class="sched">
         <label class="chk"><input type="checkbox" id="schedOn"><span><strong>Schedule for later.</strong> Posts say when you go live, Open buttons copy the text first, and you can add a phone reminder.</span></label>
@@ -195,16 +197,19 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
   };
 
   const PLATFORMS = [
-    {id:'x', name:'X / Twitter', limit:280, short:true, src:'x',
+    {id:'x', name:'X / Twitter', limit:280, short:true, src:'x', reply:true,
+      replyNote:'Tip: attach your clip in the X post box. Video uploaded to X gets far more views than a Rumble or YouTube link.',
       open:(t)=>'https://twitter.com/intent/tweet?text='+encodeURIComponent(t)},
     {id:'bsky', name:'Bluesky', limit:300, short:true, src:'bluesky',
       open:(t)=>'https://bsky.app/intent/compose?text='+encodeURIComponent(t)},
-    {id:'threads', name:'Threads', limit:500, short:true, src:'threads',
+    {id:'threads', name:'Threads', limit:500, short:true, src:'threads', reply:true,
       open:(t)=>'https://www.threads.net/intent/post?text='+encodeURIComponent(t)},
-    {id:'fb', name:'Facebook', limit:0, short:false, src:'facebook',
-      open:(t,u)=>'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(u), copyFirst:true, openNote:'Facebook only takes the link. Opening it copies your text, so just paste.'},
-    {id:'li', name:'LinkedIn', limit:3000, short:false, src:'linkedin',
-      open:(t,u)=>'https://www.linkedin.com/sharing/share-offsite/?url='+encodeURIComponent(u), copyFirst:true, openNote:'LinkedIn only takes the link. Opening it copies your text, so just paste.'},
+    {id:'fb', name:'Facebook', limit:0, short:false, src:'facebook', reply:true,
+      open:(t,u)=>'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(u), copyFirst:true, openNote:'Facebook only takes the link. Opening it copies your text, so just paste.',
+      openNoLink:()=>'https://www.facebook.com/', replyNote:'Opening Facebook copies your post. Post it, then copy the reply and paste it as the first comment.'},
+    {id:'li', name:'LinkedIn', limit:3000, short:false, src:'linkedin', reply:true,
+      open:(t,u)=>'https://www.linkedin.com/sharing/share-offsite/?url='+encodeURIComponent(u), copyFirst:true, openNote:'LinkedIn only takes the link. Opening it copies your text, so just paste.',
+      openNoLink:()=>'https://www.linkedin.com/feed/', replyNote:'Opening LinkedIn copies your post. Post it, then copy the reply and paste it as the first comment.'},
     {id:'tg', name:'Telegram', limit:4000, short:false, src:'telegram',
       open:(t,u)=>'https://t.me/share/url?url='+encodeURIComponent(u)+'&text='+encodeURIComponent(t.replace(u,'').trim())},
     {id:'pin', name:'Pinterest', limit:500, short:false, src:'pinterest', noTags:false,
@@ -298,6 +303,18 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
 
     if(p.titleOnly) return lead.replace(/^🔴 /,'');
 
+    if(replyOn(p)){
+      const pointer = p.openNoLink ? 'Link in the comments 👇' : 'Link in the reply 👇';
+      if(p.short){
+        const len = s => p.id==='x' ? xLen(s) : s.length;
+        let body = [lead, hook, tags, pointer].filter(Boolean).join('\n\n');
+        if(len(body) > p.limit) body = [lead, hook, pointer].filter(Boolean).join('\n\n');
+        if(len(body) > p.limit) body = [lead, pointer].join('\n\n');
+        return body;
+      }
+      return [lead, hook, tags, pointer].filter(Boolean).join('\n\n');
+    }
+
     if(p.short){
       let body = [lead, hook, link, tags].filter(Boolean).join('\n\n');
       // trim hook first, then tags, to fit limit (links count as 23 on X)
@@ -312,6 +329,14 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
     if(hub) lines.push('All my tools and channels: '+hub);
     if(tags && p.id!=='discord') lines.push(tags);
     return lines.join('\n\n');
+  }
+
+  function replyOn(p){ return !!p.reply && $('replyMode').checked; }
+  function buildReply(p){
+    const link = tag($('url').value.trim(), p.src);
+    const hub = $('useHub').checked && $('hub').value.trim() ? tag($('hub').value.trim(), p.src) : '';
+    const verb = kind==='live' ? 'Join here: ' : kind==='tool' ? 'Try it: ' : kind==='music' ? 'Listen: ' : 'Watch: ';
+    return [link ? verb+link : '', hub ? 'All my tools and channels: '+hub : ''].filter(Boolean).join('\n');
   }
 
   function fmtWhen(){
@@ -363,14 +388,20 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
       }
       const text = edited[p.id] ?? build(p);
       const shareUrl = tag(raw, p.src);
+      const rOn = replyOn(p);
+      const note = rOn ? (p.replyNote||'Opening it copies the reply. Post first, then paste the reply under your post.') : p.openNote;
       const el = document.createElement('article');
       el.className = 'slip';
       el.innerHTML =
         '<div class="slip-head"><h2>'+p.name+' <span class="tick">Posted</span></h2><span class="count"></span></div>'+
+        (rOn?'<span class="label">Main post (no link)</span>':'')+
         '<textarea id="t_'+p.id+'" aria-label="'+p.name+' post"></textarea>'+
+        (rOn?'<div><span class="label">Your first reply (the link)</span><textarea id="r_'+p.id+'" rows="2" aria-label="'+p.name+' reply"></textarea></div>':'')+
         '<div class="actions"></div>'+
-        (p.openNote?'<p class="note">'+p.openNote+'</p>':'');
-      const ta = el.querySelector('textarea');
+        (note?'<p class="note">'+note+'</p>':'');
+      const ta = el.querySelector('#t_'+p.id);
+      const rta = rOn ? el.querySelector('#r_'+p.id) : null;
+      if(rta){ rta.value = edited['r_'+p.id] ?? buildReply(p); rta.addEventListener('input',()=>{ edited['r_'+p.id]=rta.value; }); }
       ta.value = text;
       const count = el.querySelector('.count');
       const upd = ()=>{
@@ -385,18 +416,25 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
       const copy = document.createElement('button');
       copy.type='button'; copy.className='btn'; copy.textContent='Copy';
       copy.onclick = ()=>copyText(ta.value, p.name+' post copied', ta);
+      copy.textContent = rOn ? 'Copy post' : 'Copy';
       acts.appendChild(copy);
+      if(rta){
+        const rc=document.createElement('button'); rc.type='button'; rc.className='btn'; rc.textContent='Copy reply';
+        rc.onclick=()=>copyText(rta.value, 'Reply copied, paste it under your post', rta);
+        acts.appendChild(rc);
+      }
 
       let a;
-      function refreshLink(){ if(a) a.href = p.open(ta.value, shareUrl); }
-      shareFns[p.id] = ()=>({href:p.open(ta.value, shareUrl), text:ta.value, ta});
+      const hrefFor = ()=> rOn && p.openNoLink ? p.openNoLink() : p.open(ta.value, shareUrl);
+      function refreshLink(){ if(a) a.href = hrefFor(); }
+      shareFns[p.id] = ()=>({href:hrefFor(), text:ta.value, ta, reply:rta ? rta.value : '', rta, rOn});
       if(done.has(p.id)) el.classList.add('done');
       el.id='slip_'+p.id;
       if(p.open){
         a = document.createElement('a');
         a.className='btn primary'; a.target='_blank'; a.rel='noopener';
         a.textContent='Open in '+p.name.split(' /')[0];
-        a.addEventListener('click', ()=>{ remember(raw); markDone(p.id); if(p.copyFirst || $('schedOn').checked) copyText(ta.value,'Text copied, paste it into '+p.name,ta); });
+        a.addEventListener('click', ()=>{ remember(raw); markDone(p.id); onOpen(p, shareFns[p.id]()); });
         acts.appendChild(a);
         refreshLink();
       }
@@ -465,6 +503,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
   ['url','title','extra','tags','hub','utm','useHub'].forEach(id=>$(id).addEventListener('input',()=>{ clearEdits(); render(); }));
   $('utm').addEventListener('change',()=>{ clearEdits(); render(); });
   $('useHub').addEventListener('change',()=>{ clearEdits(); render(); });
+  $('replyMode').addEventListener('change',()=>{ clearEdits(); render(); });
   function defaultWhen(){
     const d=new Date(); d.setDate(d.getDate()+1); d.setHours(9,30,0,0);
     const pad=n=>String(n).padStart(2,'0');
@@ -482,7 +521,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
     const z=x=>x.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
     const end=new Date(d.getTime()+30*60000);
     const esc=t=>t.replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
-    const body=PLATFORMS.filter(p=>$('t_'+p.id) && !p.video).map(p=>p.name+':\n'+$('t_'+p.id).value).join('\n\n');
+    const body=PLATFORMS.filter(p=>$('t_'+p.id) && !p.video).map(p=>p.name+':\n'+$('t_'+p.id).value+($('r_'+p.id)?'\nReply: '+$('r_'+p.id).value:'')).join('\n\n');
     const page=location.href.split('#')[0];
     const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//BuyItTradeIt//Go-Live Poster//EN','BEGIN:VEVENT',
       'UID:'+Date.now()+'@go-live-poster','DTSTAMP:'+z(new Date()),'DTSTART:'+z(d),'DTEND:'+z(end),
@@ -503,16 +542,23 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
     const id=nextId(); if(!id) return;
     const p=PLATFORMS.find(x=>x.id===id), s=shareFns[id]();
     remember($('url').value.trim());
-    if(p.copyFirst || $('schedOn').checked) copyText(s.text,'Text copied, paste it into '+p.name,s.ta);
+    onOpen(p, s);
     markDone(id);
   });
+  // What lands on the clipboard when a site opens
+  function onOpen(p, s){
+    const needsPaste = p.copyFirst || $('schedOn').checked;
+    if(s.rOn && needsPaste) copyText(s.text,'Post copied. Paste it, post, then hit Copy reply for the link',s.ta);
+    else if(s.rOn) copyText(s.reply,'Reply link copied. After you post, paste it as a reply',s.rta);
+    else if(needsPaste) copyText(s.text,'Text copied, paste it into '+p.name,s.ta);
+  }
   $('copyAll').addEventListener('click',()=>{
-    const all = PLATFORMS.filter(p=>$('t_'+p.id)).map(p=>'— '+p.name+' —\n'+(p.video ? 'Title: '+$('t_'+p.id+'_title').value+'\n'+$('t_'+p.id).value+'\nTags: '+$('t_'+p.id+'_tags').value : $('t_'+p.id).value)).join('\n\n');
+    const all = PLATFORMS.filter(p=>$('t_'+p.id)).map(p=>'— '+p.name+' —\n'+(p.video ? 'Title: '+$('t_'+p.id+'_title').value+'\n'+$('t_'+p.id).value+'\nTags: '+$('t_'+p.id+'_tags').value : $('t_'+p.id).value+($('r_'+p.id)?'\n\nReply: '+$('r_'+p.id).value:''))).join('\n\n');
     copyText(all,'All posts copied');
   });
 
   // restore last-used hashtags/hub only (small)
-  const DEF_IDS=['url','extra','tags','hub','utm','useHub'];
+  const DEF_IDS=['url','extra','tags','hub','utm','useHub','replyMode'];
   function loadDefaults(){
     const d = store.get('glp_defaults', null) || store.get('glp_prefs', null);
     if(!d) return false;
