@@ -4,7 +4,7 @@ window.GLP = {
   maker: 'BuyItTradeIt',
   site: 'https://buyittradeit.com',
   tipJar: 'https://ko-fi.com/J4V128ZBWE',
-  streamlabsAff: ''    // Streamlabs affiliate (impact.com) tracking link
+  streamlabsAff: 'https://streamlabs.pxf.io/enGjyX'
 };
 
 (function () {
