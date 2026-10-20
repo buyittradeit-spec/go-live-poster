@@ -219,6 +219,12 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
     {id:'rum', name:'Rumble upload', video:true, src:'rumble',
       open:()=>'https://rumble.com/upload.php', openLabel:'Open Rumble upload',
       openNote:'Upload kit: paste the title and description, add the tags, then set visibility or a publish time before you finish.'},
+    {id:'kick', name:'Kick stream info', video:true, src:'kick', descLabel:'Chat message to pin',
+      open:()=>'https://dashboard.kick.com/', openLabel:'Open Kick dashboard',
+      openNote:'Stream kit: paste the title into Stream Info before you go live, then pin the chat message once you are on air.'},
+    {id:'ody', name:'Odysee upload', video:true, src:'odysee',
+      open:()=>'https://odysee.com/$/upload', openLabel:'Open Odysee upload',
+      openNote:'Upload kit: paste the title, description and tags, then attach your video. Odysee also accepts the same file you post to Rumble.'},
     {id:'dm', name:'Dailymotion upload', video:true, src:'dailymotion',
       open:()=>'https://www.dailymotion.com/', openLabel:'Open Dailymotion',
       openNote:'Upload kit: copy each field into the upload form, then attach your video file there.'},
@@ -233,6 +239,11 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
     const tagWords=$('tags').value.trim().split(/\s+/).filter(Boolean).map(t=>t.replace(/^#/,''));
     const desc=[hook, raw && !/dailymotion|twitch/i.test(raw) ? 'Full stream: '+tag(raw,p.src) : '', hub ? 'More links: '+tag(hub,p.src) : '', $('tags').value.trim()].filter(Boolean).join('\n\n');
     const t = p.id==='yts' && !/#shorts/i.test(title) ? title+' #Shorts' : title;
+    if(p.id==='kick'){
+      const site=hub||'';
+      const chat=[hook, site?'Free tools and links: '+tag(site,'kick'):'', raw && !/kick\.com/i.test(raw)?'Also on: '+tag(raw,'kick'):''].filter(Boolean).join(' | ');
+      return {title:(kind==='live'?'🔴 ':'')+t, desc:chat, tags:tagWords.slice(0,5).join(', ')};
+    }
     return {title:t, desc, tags: tagWords.join(', ')};
   }
 
@@ -242,6 +253,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
     if(u.includes('youtube.com')||u.includes('youtu.be')) return 'YouTube';
     if(u.includes('twitch.tv')) return 'Twitch';
     if(u.includes('kick.com')) return 'Kick';
+    if(u.includes('odysee.com')) return 'Odysee';
     if(u.includes('x.com')||u.includes('twitter.com')) return 'X';
     if(u.includes('buyitprintables')) return 'BuyIt Printables';
     if(u.includes('buyittradeit')) return 'BuyItTradeIt';
@@ -322,7 +334,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
         el.className='slip';
         el.innerHTML='<div class="slip-head"><h2>'+p.name+'</h2><span class="count">video kit</span></div>'+
           '<div><span class="label">Title</span><input type="text" id="t_'+p.id+'_title"></div>'+
-          '<div><span class="label">Description</span><textarea id="t_'+p.id+'" rows="5"></textarea></div>'+
+          '<div><span class="label">'+(p.descLabel||'Description')+'</span><textarea id="t_'+p.id+'" rows="5"></textarea></div>'+
           '<div><span class="label">Tags</span><input type="text" id="t_'+p.id+'_tags"></div>'+
           '<div class="actions"></div><p class="note">'+p.openNote+'</p>';
         el.querySelector('#t_'+p.id+'_title').value=k.title;
@@ -335,8 +347,8 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
           acts.appendChild(b);
         });
         const a=document.createElement('a'); a.className='btn primary'; a.target='_blank'; a.rel='noopener';
-        a.textContent=p.openLabel+' (copies description)'; a.href=p.open();
-        a.addEventListener('click',()=>{ const f=el.querySelector('#t_'+p.id); copyText(f.value,'Description copied, paste it in',f); });
+        a.textContent=p.openLabel+' (copies '+(p.descLabel?'title':'description')+')'; a.href=p.open();
+        a.addEventListener('click',()=>{ const f=el.querySelector('#t_'+p.id+(p.descLabel?'_title':'')); copyText(f.value,(p.descLabel?'Title':'Description')+' copied, paste it in',f); });
         acts.appendChild(a);
         host.appendChild(el);
         return;
