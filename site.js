@@ -5,7 +5,7 @@ window.GLP = {
   site: 'https://buyittradeit.com',
   tipJar: 'https://ko-fi.com/J4V128ZBWE',
   streamlabsAff: 'https://streamlabs.pxf.io/enGjyX',
-  promo: { url: 'https://buyitprintables.com/', name: 'BuyIt Printables', text: 'Need thumbnails, stickers or printables for your channel? Free AI makers and printables.' }
+  promo: { url: 'https://buyitprintables.com/', name: 'BuyIt Printables', text: 'AI sticker, card, wall art and coloring page makers, plus printables for creators and their fans.' }
 };
 
 (function () {
