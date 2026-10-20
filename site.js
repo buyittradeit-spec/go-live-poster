@@ -3,7 +3,7 @@
 window.GLP = {
   maker: 'BuyItTradeIt',
   site: 'https://buyittradeit.com',
-  tipJar: '',          // tip jar link, e.g. https://ko-fi.com/yourname
+  tipJar: 'https://ko-fi.com/J4V128ZBWE',
   streamlabsAff: ''    // Streamlabs affiliate (impact.com) tracking link
 };
 
