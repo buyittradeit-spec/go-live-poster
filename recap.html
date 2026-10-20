@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stream Recap · Go-Live Poster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: session log on the left (what happened), output slips on the right (what to paste); same pit-board console look as the poster */
+:root{
+  --bg:#121110; --panel:#1b1916; --panel-2:#23201c; --line:#3a342b;
+  --fg:#ece6dc; --muted:#a39888; --amber:#f2a33a; --amber-ink:#1a1206;
+  --live:#e5484d; --ok:#4cc38a;
+  --f-display:"Chakra Petch","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:20px}
+nav.top{display:flex;flex-wrap:wrap;gap:6px}
+nav.top a{font:500 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:3px;padding:4px 10px}
+nav.top a[aria-current=page]{color:var(--amber-ink);background:var(--amber);border-color:var(--amber)}
+nav.top a:hover{color:var(--fg)}
+header{display:grid;gap:10px;border-bottom:1px solid var(--line);padding-bottom:14px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(26px,4vw,38px);letter-spacing:.02em;margin:0;line-height:1.05;text-transform:uppercase}
+h1 span{color:var(--amber)}
+.sub{color:var(--muted);margin:0;max-width:66ch}
+.grid{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.rail{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;gap:14px}
+.label{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:5px}
+input[type=text],input[type=url],input[type=time],input[type=date],textarea,select{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:9px 10px;font:inherit;font-size:14px}
+textarea{resize:vertical;font-family:var(--f-mono);font-size:13px;line-height:1.55}
+textarea.prose{font-family:var(--f-body);font-size:14px}
+input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hint{font-size:12px;color:var(--muted);margin:4px 0 0}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--muted)}
+.chk input{margin-top:3px;accent-color:var(--amber)}
+.example{font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--amber);border:1px dashed var(--amber);border-radius:3px;padding:3px 8px;justify-self:start}
+.out{display:grid;gap:12px;min-width:0}
+.tape{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+@media (max-width:520px){.tape{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tape div{background:var(--panel);padding:10px 12px;display:grid;gap:2px}
+.tape b{font:700 24px var(--f-display);font-variant-numeric:tabular-nums}
+.tape span{font:11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.pos{color:var(--ok)} .neg{color:var(--live)}
+.slip{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:4px;padding:14px;display:grid;gap:10px;min-width:0}
+.slip-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center}
+.slip h2{font-family:var(--f-display);font-weight:500;font-size:17px;letter-spacing:.06em;text-transform:uppercase;margin:0}
+.count{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ok)}
+.count.bad{color:var(--live);border-color:var(--live)}
+.slip textarea{font-family:var(--f-body);font-size:14px;min-height:190px;background:var(--bg)}
+.slip textarea.tall{min-height:320px}
+.warn{font-size:12px;color:var(--live);margin:0}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{font:600 13px var(--f-body);padding:8px 12px;border-radius:4px;border:1px solid var(--line);background:var(--panel-2);color:var(--fg);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--amber)}
+.btn.primary{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--amber);color:var(--amber-ink);font:600 13px var(--f-body);padding:8px 14px;border-radius:4px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="top" aria-label="Go-Live Poster tools">
+    <a href="./">Poster</a><a href="recap.html" aria-current="page">Recap</a><a href="overlay.html">Stream overlay</a>
+  </nav>
+  <header>
+    <h1>Stream <span>Recap</span></h1>
+    <p class="sub">Right after you end the stream, jot down what happened. You get a replay post, a full YouTube/Rumble description and chapter timestamps worked out from the clock times you wrote down.</p>
+  </header>
+
+  <div class="grid">
+    <form class="rail" id="form" autocomplete="off">
+      <span class="example" id="exTag">Example session, replace with yours</span>
+      <div>
+        <label class="label" for="url">Replay link</label>
+        <input type="url" id="url" value="https://rumble.com/c/buyittradeit">
+      </div>
+      <div>
+        <label class="label" for="title">Stream title</label>
+        <input type="text" id="title" value="NQ & ES morning session — CPI day game plan">
+      </div>
+      <div class="two">
+        <div>
+          <label class="label" for="date">Date</label>
+          <input type="date" id="date">
+        </div>
+        <div>
+          <label class="label" for="inst">Markets</label>
+          <input type="text" id="inst" value="NQ, ES">
+        </div>
+      </div>
+
+      <div>
+        <div class="two">
+          <div>
+            <label class="label" for="start">Stream started at</label>
+            <input type="time" id="start" value="09:15">
+          </div>
+          <div>
+            <label class="label" for="mode">My times are</label>
+            <select id="mode">
+              <option value="clock">Clock times</option>
+              <option value="video">Video times</option>
+            </select>
+          </div>
+        </div>
+        <label class="label" for="marks" style="margin-top:10px">Moments (one per line)</label>
+        <textarea id="marks" rows="6">9:15 Pre-market plan and levels
+9:30 Opening bell, CPI reaction
+9:42 First NQ long off the gap fill
+10:05 ES rejects the 2 std dev band
+10:40 Chop, sitting on hands
+11:10 Recap and Q&amp;A</textarea>
+        <p class="hint">Clock times: write the time on your wall clock, like <code>10:05 ES rejects</code>. The page subtracts the start time. Video times: write the time from the replay, like <code>50:12</code>.</p>
+      </div>
+
+      <div>
+        <label class="label" for="levels">Levels that mattered</label>
+        <textarea id="levels" rows="3">NQ 21,450 held as support twice
+ES 5,912 overnight high, rejected
+Gap filled by 9:51</textarea>
+      </div>
+
+      <div>
+        <label class="label" for="trades">Trades (end each line with points, like +12 or -6)</label>
+        <textarea id="trades" rows="4">NQ long 21,455 off gap fill +12
+ES short at 2 SD band +4.5
+NQ long chop -6</textarea>
+      </div>
+
+      <div>
+        <label class="label" for="lesson">Lesson of the day</label>
+        <textarea id="lesson" class="prose" rows="2">Best trade came from waiting for the gap to fill instead of chasing the CPI spike.</textarea>
+      </div>
+
+      <div>
+        <label class="label" for="tags">Hashtags</label>
+        <input type="text" id="tags" value="#futures #daytrading #NQ #ES">
+      </div>
+      <div>
+        <label class="label" for="hub">Site link</label>
+        <input type="url" id="hub" value="https://buyittradeit.com">
+      </div>
+
+      <label class="chk"><input type="checkbox" id="showPts" checked><span>Show my points result in the posts</span></label>
+    </form>
+
+    <section class="out" aria-label="Recap outputs">
+      <div class="tape" aria-label="Session summary">
+        <div><span>Net points</span><b id="sNet">0</b></div>
+        <div><span>Trades</span><b id="sN">0</b></div>
+        <div><span>Win / loss</span><b id="sWL">0 / 0</b></div>
+        <div><span>Chapters</span><b id="sCh">0</b></div>
+      </div>
+
+      <article class="slip">
+        <div class="slip-head"><h2>Replay post</h2><span class="count" id="cPost"></span></div>
+        <textarea id="oPost" aria-label="Replay post"></textarea>
+        <div class="actions">
+          <button type="button" class="btn" data-copy="oPost">Copy</button>
+          <a class="btn primary" id="toPoster" href="./#handoff">Send to poster (all platforms)</a>
+        </div>
+      </article>
+
+      <article class="slip">
+        <div class="slip-head"><h2>Chapters</h2><span class="count" id="cCh"></span></div>
+        <textarea id="oCh" aria-label="Chapter timestamps"></textarea>
+        <p class="warn" id="chWarn" hidden></p>
+        <div class="actions"><button type="button" class="btn" data-copy="oCh">Copy chapters</button></div>
+      </article>
+
+      <article class="slip">
+        <div class="slip-head"><h2>YouTube / Rumble description</h2><span class="count" id="cDesc"></span></div>
+        <textarea id="oDesc" class="tall" aria-label="Video description"></textarea>
+        <div class="actions">
+          <button type="button" class="btn" data-copy="oDesc">Copy description</button>
+          <a class="btn" href="https://studio.youtube.com/" target="_blank" rel="noopener">Open YouTube Studio</a>
+          <a class="btn" href="https://rumble.com/account/content" target="_blank" rel="noopener">Open Rumble videos</a>
+        </div>
+      </article>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+  const IDS=['url','title','date','inst','start','mode','marks','levels','trades','lesson','tags','hub','showPts'];
+
+  // ---- pure helpers (also used by the self-test) ----
+  function toSec(h,m,s){return h*3600+m*60+(s||0)}
+  function fmt(sec){
+    sec=Math.max(0,Math.round(sec));
+    const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60,p=n=>String(n).padStart(2,'0');
+    return h?h+':'+p(m)+':'+p(s):m+':'+p(s);
+  }
+  function parseMarks(text,mode,start){
+    const out=[];
+    const [sh,sm]=(start||'0:0').split(':').map(Number);
+    const startSec=toSec(sh||0,sm||0);
+    text.split('\n').forEach(line=>{
+      const m=line.match(/^\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?\s*[-–—:|]?\s*(.*)$/i);
+      if(!m) return;
+      let a=+m[1],b=+m[2],c=m[3]?+m[3]:null;const ap=(m[4]||'').toLowerCase();const label=m[5].trim()||'Chapter';
+      let off;
+      if(mode==='video'){
+        off = c!=null ? toSec(a,b,c) : a*60+b;
+      } else {
+        if(ap==='pm'&&a<12)a+=12; if(ap==='am'&&a===12)a=0;
+        let t=toSec(a,b,c||0);
+        if(!ap && t<startSec && t+12*3600>=startSec) t+=12*3600;   // 1:15 after a 9:15 start means 13:15
+        off=t-startSec; if(off<0) off+=24*3600;
+      }
+      out.push({off,label});
+    });
+    out.sort((x,y)=>x.off-y.off);
+    if(out.length && out[0].off>0) out.unshift({off:0,label:'Intro'});
+    if(out.length) out[0].off=0;
+    return out;
+  }
+  function chapterProblems(ch){
+    const p=[];
+    if(ch.length && ch.length<3) p.push('YouTube needs at least 3 chapters to show them.');
+    for(let i=1;i<ch.length;i++) if(ch[i].off-ch[i-1].off<10){p.push('Chapters need at least 10 seconds between them ("'+ch[i].label+'").');break}
+    return p;
+  }
+  function parseTrades(text){
+    const rows=[];
+    text.split('\n').forEach(l=>{
+      if(!l.trim()) return;
+      const m=l.match(/([+\-−]\s*\d+(?:\.\d+)?)\s*(?:pts?|points?|ticks?)?\s*$/i);
+      const pts=m?parseFloat(m[1].replace('−','-').replace(/\s/g,'')):null;
+      rows.push({text:l.trim(),pts});
+    });
+    const scored=rows.filter(r=>r.pts!=null);
+    return {rows,net:scored.reduce((a,r)=>a+r.pts,0),wins:scored.filter(r=>r.pts>0).length,losses:scored.filter(r=>r.pts<0).length,n:rows.length};
+  }
+  function signed(n){const r=Math.round(n*100)/100;return (r>0?'+':'')+r}
+  function tag(u,src){try{const x=new URL(u);x.searchParams.set('utm_source',src);x.searchParams.set('utm_medium','social');return x.toString()}catch(e){return u}}
+  function xLen(s){return s.replace(/https?:\/\/\S+/g,'x'.repeat(23)).length}
+  function lines(t){return t.split('\n').map(s=>s.trim()).filter(Boolean)}
+
+  // ---- render ----
+  function render(){
+    const v={};IDS.forEach(k=>v[k]=$(k).type==='checkbox'?$(k).checked:$(k).value.trim());
+    store.set('recap_draft',v);
+    const ch=parseMarks(v.marks,v.mode,v.start);
+    const tr=parseTrades(v.trades);
+    const res= v.showPts && tr.n ? 'Net '+signed(tr.net)+' pts on '+tr.n+' trade'+(tr.n>1?'s':'') : '';
+
+    $('sNet').textContent=signed(tr.net);
+    $('sNet').className=tr.net>0?'pos':tr.net<0?'neg':'';
+    $('sN').textContent=tr.n;
+    $('sWL').textContent=tr.wins+' / '+tr.losses;
+    $('sCh').textContent=ch.length;
+
+    // replay post (X-sized)
+    const link=tag(v.url,'x');
+    let post=['Replay is up: '+v.title, v.lesson?'Lesson: '+v.lesson:'', res, link, v.tags].filter(Boolean).join('\n\n');
+    if(xLen(post)>280) post=['Replay is up: '+v.title, res, link, v.tags].filter(Boolean).join('\n\n');
+    if(xLen(post)>280) post=['Replay is up: '+v.title, link].join('\n\n');
+    $('oPost').value=post;
+    const n=xLen(post);$('cPost').textContent=n+' / 280';$('cPost').className='count'+(n>280?' bad':'');
+
+    // chapters
+    const chText=ch.map(c=>fmt(c.off)+' '+c.label).join('\n');
+    $('oCh').value=chText;
+    $('cCh').textContent=ch.length+' chapters';
+    const probs=chapterProblems(ch);
+    $('chWarn').hidden=!probs.length;$('chWarn').textContent=probs.join(' ');
+    $('cCh').className='count'+(probs.length?' bad':'');
+
+    // description
+    const d=v.date?new Date(v.date+'T12:00:00'):new Date();
+    const dateStr=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    const hub=tag(v.hub,'youtube');
+    const parts=[];
+    parts.push(v.title+' | '+(v.inst?v.inst+' futures | ':'')+dateStr);
+    if(v.lesson) parts.push('Lesson of the day: '+v.lesson);
+    if(chText) parts.push('CHAPTERS\n'+chText);
+    const lv=lines(v.levels); if(lv.length) parts.push('LEVELS THAT MATTERED\n'+lv.map(x=>'• '+x).join('\n'));
+    if(tr.n && v.showPts) parts.push('TRADES ('+signed(tr.net)+' pts net, '+tr.wins+'W / '+tr.losses+'L)\n'+tr.rows.map(r=>'• '+r.text).join('\n'));
+    if(v.hub) parts.push('FREE TOOLS I USE ON STREAM\nStd dev calculator, gap fill odds, session clock and more: '+hub);
+    parts.push('This stream is for education and entertainment only, not financial advice. Futures trading involves substantial risk of loss and is not right for everyone. Some links may be affiliate links.');
+    if(v.tags) parts.push(v.tags);
+    const desc=parts.join('\n\n');
+    $('oDesc').value=desc;
+    $('cDesc').textContent=desc.length+' / 5000';$('cDesc').className='count'+(desc.length>5000?' bad':'');
+
+    // handoff payload for the poster
+    $('toPoster').onclick=()=>{
+      store.set('glp_handoff',{url:v.url,title:v.title,extra:(v.lesson?'Lesson: '+v.lesson:'')+(res?(v.lesson?' ':'')+res+'.':''),kind:'replay',tags:v.tags,at:Date.now()});
+    };
+  }
+
+  // restore draft or load example
+  const draft=store.get('recap_draft',null);
+  if(draft){IDS.forEach(k=>{if(draft[k]==null)return;if($(k).type==='checkbox')$(k).checked=draft[k];else $(k).value=draft[k]});$('exTag').hidden=true}
+  if(!$('date').value){const t=new Date(),p=n=>String(n).padStart(2,'0');$('date').value=t.getFullYear()+'-'+p(t.getMonth()+1)+'-'+p(t.getDate())}
+
+  IDS.forEach(k=>$(k).addEventListener('input',()=>{$('exTag').hidden=true;render()}));
+  $('showPts').addEventListener('change',render);
+  $('form').addEventListener('submit',e=>e.preventDefault());
+
+  let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800)}
+  document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',()=>{
+    const ta=$(b.dataset.copy);
+    const sel=()=>{ta.focus();ta.select();toast('Selected. Press Ctrl+C to copy')};
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(()=>toast('Copied')).catch(sel); else sel();
+  }));
+
+  window.__recap={parseMarks,parseTrades,fmt,chapterProblems};
+  render();
+})();
+</script>
+</body>
+</html>

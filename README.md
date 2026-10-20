@@ -15,3 +15,11 @@ No server, no API keys, no AI calls. The page keeps only your last 8 links and y
 
 Open `index.html` in any browser, or turn on GitHub Pages:
 Settings → Pages → Source: "Deploy from a branch" → Branch: `main` / root → Save.
+
+## Pages
+
+- `index.html`: the poster. Paste a link, get posts for every platform, then hit Post everywhere.
+- `recap.html`: after a stream, log moments, levels, trades and the lesson. Get a replay post, YouTube chapters and a full description, then send the post to the poster.
+- `overlay.html`: build an OBS browser-source overlay with a QR code for your site, Streamlabs tip jar and deals page. Optional Streamlabs socket token adds tip and follow pop-ups.
+
+`qrcode.js` is [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) by Kazuhiko Arase, MIT license.

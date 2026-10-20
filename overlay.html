@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stream Overlay · Go-Live Poster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="qrcode.js"></script>
+<style>
+/* Layout: builder page = settings rail + scaled 1920x1080 preview; ?obs=1 = transparent full-screen overlay for an OBS browser source */
+:root{
+  --bg:#121110; --panel:#1b1916; --panel-2:#23201c; --line:#3a342b;
+  --fg:#ece6dc; --muted:#a39888; --amber:#f2a33a; --amber-ink:#1a1206;
+  --live:#e5484d; --ok:#4cc38a; --qr-ink:#121110; --qr-paper:#fbf7ef;
+  --f-display:"Chakra Petch","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body.obs{background:transparent;overflow:hidden}
+
+/* ---------- builder ---------- */
+.page{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:20px}
+nav.top{display:flex;flex-wrap:wrap;gap:6px}
+nav.top a{font:500 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:3px;padding:4px 10px}
+nav.top a[aria-current=page]{color:var(--amber-ink);background:var(--amber);border-color:var(--amber)}
+nav.top a:hover{color:var(--fg)}
+header{display:grid;gap:10px;border-bottom:1px solid var(--line);padding-bottom:14px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(26px,4vw,38px);letter-spacing:.02em;margin:0;line-height:1.05;text-transform:uppercase}
+h1 span{color:var(--amber)}
+.sub{color:var(--muted);margin:0;max-width:66ch}
+.grid{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.rail{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;gap:14px}
+.label{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:5px}
+input[type=text],input[type=url],input[type=password],input[type=number],select{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:9px 10px;font:inherit;font-size:14px}
+input[type=range]{width:100%;accent-color:var(--amber)}
+input:focus,select:focus,button:focus-visible,a:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.group{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:12px}
+.group h2{font-family:var(--f-display);font-weight:500;font-size:15px;letter-spacing:.06em;text-transform:uppercase;margin:0}
+.note{font-size:12px;color:var(--muted);margin:0}
+.note code{font-family:var(--f-mono);color:var(--fg)}
+.btn{font:600 13px var(--f-body);padding:8px 12px;border-radius:4px;border:1px solid var(--line);background:var(--panel-2);color:var(--fg);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--amber)}
+.btn.primary{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.right{display:grid;gap:14px;min-width:0}
+.pv{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;border:1px solid var(--line);border-radius:6px;overflow:hidden;
+  background:
+   linear-gradient(transparent 0 calc(100% - 1px), rgba(255,255,255,.04) 0) 0 0/100% 12.5%,
+   linear-gradient(90deg, transparent 0 calc(100% - 1px), rgba(255,255,255,.04) 0) 0 0/8.33% 100%,
+   linear-gradient(160deg,#0d1117,#151b22)}
+.pv canvas.chart{position:absolute;inset:0;width:100%;height:100%}
+.pv .stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
+.pv-cap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center}
+.urlbox{font-family:var(--f-mono);font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:10px;word-break:break-all;color:var(--muted);user-select:all}
+.steps{margin:0;padding-left:20px;display:grid;gap:4px;font-size:14px;color:var(--muted)}
+.steps b{color:var(--fg);font-weight:600}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;gap:10px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--amber);color:var(--amber-ink);font:600 13px var(--f-body);padding:8px 14px;border-radius:4px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+.toast.show{opacity:1}
+
+/* ---------- the overlay itself (drawn at 1920x1080 scale) ---------- */
+.stage{position:relative;width:100vw;height:100vh;pointer-events:none}
+body.obs .stage{width:100vw;height:100vh}
+.ov{position:absolute;display:flex;align-items:center;gap:22px;padding:18px 26px 18px 18px;
+  background:rgba(18,17,16,.92);border:2px solid var(--amber);border-radius:10px;
+  box-shadow:0 10px 40px rgba(0,0,0,.45);
+  transform:translateY(24px);opacity:0;transition:transform .5s cubic-bezier(.2,.8,.2,1),opacity .5s}
+.ov.show{transform:none;opacity:1}
+.ov.pos-br{right:48px;bottom:48px}
+.ov.pos-bl{left:48px;bottom:48px}
+.ov.pos-tr{right:48px;top:48px}
+.ov.pos-tl{left:48px;top:48px}
+.ov .qr{background:var(--qr-paper);padding:10px;border-radius:6px;line-height:0}
+.ov .qr canvas{display:block;image-rendering:pixelated}
+.ov .txt{display:grid;gap:2px;min-width:0}
+.ov .eyebrow{font:500 20px var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--amber);display:flex;align-items:center;gap:10px}
+.ov .eyebrow .dot{width:12px;height:12px;border-radius:50%;background:var(--live)}
+.ov .big{font:700 46px/1.05 var(--f-display);letter-spacing:.02em;color:var(--fg);white-space:nowrap}
+.ov .small{font:500 22px var(--f-body);color:var(--muted);white-space:nowrap}
+.ov .scan{font:500 16px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.ov .bar{height:4px;background:var(--line);border-radius:2px;margin-top:10px;overflow:hidden}
+.ov .bar i{display:block;height:100%;width:0;background:var(--amber)}
+.alert{position:absolute;left:50%;top:60px;transform:translate(-50%,-30px);opacity:0;transition:transform .5s cubic-bezier(.2,.8,.2,1),opacity .5s;
+  background:var(--amber);color:var(--amber-ink);border-radius:10px;padding:18px 34px;font:700 40px var(--f-display);letter-spacing:.02em;white-space:nowrap;box-shadow:0 10px 40px rgba(0,0,0,.45)}
+.alert small{display:block;font:500 22px var(--f-body);letter-spacing:0;opacity:.85}
+.alert.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.ov,.alert{transition:none}}
+</style>
+</head>
+<body>
+<div class="page" id="builder">
+  <div class="wrap">
+    <nav class="top" aria-label="Go-Live Poster tools">
+      <a href="./">Poster</a><a href="recap.html">Recap</a><a href="overlay.html" aria-current="page">Stream overlay</a>
+    </nav>
+    <header>
+      <h1>Stream <span>Overlay</span></h1>
+      <p class="sub">A QR card that slides onto your stream so viewers can scan straight to your site, tip jar or deals page. Add it to OBS once as a browser source. Streamlabs tips and follows can trigger it too.</p>
+    </header>
+
+    <div class="grid">
+      <form class="rail" id="form" autocomplete="off">
+        <div>
+          <label class="label" for="hub">Site link</label>
+          <input type="url" id="hub" value="https://buyittradeit.com">
+        </div>
+        <div>
+          <label class="label" for="line">Tagline under the link</label>
+          <input type="text" id="line" value="Std dev bands · gap fill odds · session clock">
+        </div>
+        <div>
+          <label class="label" for="deals">Deals page (optional)</label>
+          <input type="url" id="deals" placeholder="https://buyittradeit.com/deals">
+        </div>
+
+        <div class="group">
+          <h2>Streamlabs</h2>
+          <div>
+            <label class="label" for="sluser">Streamlabs username (adds a tip-jar card)</label>
+            <input type="text" id="sluser" placeholder="buyittradeit">
+          </div>
+          <div>
+            <label class="label" for="sltoken">Socket API token (optional, for live alerts)</label>
+            <input type="password" id="sltoken" placeholder="Paste only if you want tip/follow pop-ups">
+          </div>
+          <p class="note">Find it in Streamlabs under <code>Settings → API Settings → API Tokens → Your Socket API Token</code>. It stays in your OBS link only. Never post that link anywhere.</p>
+        </div>
+
+        <div class="group">
+          <h2>Timing and placement</h2>
+          <div class="two">
+            <div>
+              <label class="label" for="pos">Corner</label>
+              <select id="pos">
+                <option value="br">Bottom right</option>
+                <option value="bl">Bottom left</option>
+                <option value="tr">Top right</option>
+                <option value="tl">Top left</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="rot">Switch card every</label>
+              <select id="rot">
+                <option value="10">10 sec</option>
+                <option value="15" selected>15 sec</option>
+                <option value="30">30 sec</option>
+              </select>
+            </div>
+          </div>
+          <div class="two">
+            <div>
+              <label class="label" for="every">Show it</label>
+              <select id="every">
+                <option value="0">Always on</option>
+                <option value="5">Every 5 min</option>
+                <option value="10" selected>Every 10 min</option>
+                <option value="15">Every 15 min</option>
+                <option value="30">Every 30 min</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="dur">For</label>
+              <select id="dur">
+                <option value="30">30 sec</option>
+                <option value="45" selected>45 sec</option>
+                <option value="60">60 sec</option>
+                <option value="90">90 sec</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="label" for="qrsize">QR size: <span id="qrsizeVal">170</span>px</label>
+            <input type="range" id="qrsize" min="110" max="260" step="10" value="170">
+          </div>
+          <p class="note">Pop-in mode keeps your chart clear most of the time. Tips and follows always pop it in, even between timers.</p>
+        </div>
+      </form>
+
+      <div class="right">
+        <div class="pv" id="pv">
+          <canvas class="chart" id="chart" aria-hidden="true"></canvas>
+          <div class="stage" id="pvStage"></div>
+        </div>
+        <div class="pv-cap">
+          <span class="note">Preview at 1920×1080. The candles are fake, just to show placement.</span>
+          <div class="actions">
+            <button type="button" class="btn" id="testTip">Test a tip alert</button>
+            <button type="button" class="btn" id="testFollow">Test a follow</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <span class="label">Your OBS link</span>
+          <div class="urlbox" id="obsUrl"></div>
+          <div class="actions">
+            <button type="button" class="btn primary" id="copyUrl">Copy OBS link</button>
+            <a class="btn" id="openUrl" target="_blank" rel="noopener" href="#">Open it full screen</a>
+          </div>
+          <ol class="steps">
+            <li>In OBS, under <b>Sources</b>, click <b>+</b> → <b>Browser</b> and name it <b>QR overlay</b>.</li>
+            <li>Paste the link into <b>URL</b>, set width <b>1920</b> and height <b>1080</b>, then click OK.</li>
+            <li>Keep it at the top of the source list so it sits over your chart.</li>
+            <li>Scans show up in your site stats as <b>utm_source=stream</b>, so you'll know the stream sent them.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<template id="ovTpl">
+  <div class="ov">
+    <div class="qr"></div>
+    <div class="txt">
+      <div class="eyebrow"><span class="dot"></span><span class="eb"></span></div>
+      <div class="big"></div>
+      <div class="small"></div>
+      <div class="scan">Scan with your phone camera</div>
+      <div class="bar"><i></i></div>
+    </div>
+  </div>
+  <div class="alert"><span class="at"></span><small class="as"></small></div>
+</template>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const P=new URLSearchParams(location.search);
+  const OBS=P.get('obs')==='1';
+  const FIELDS=['hub','line','deals','sluser','pos','rot','every','dur','qrsize'];
+  const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+  function tagUrl(u,src,med){
+    try{const x=new URL(u);x.searchParams.set('utm_source',src);x.searchParams.set('utm_medium',med);x.searchParams.set('utm_campaign','overlay');return x.toString()}catch(e){return u}
+  }
+  function pretty(u){try{const x=new URL(u);return (x.host.replace(/^www\./,'')+x.pathname).replace(/\/$/,'')}catch(e){return u}}
+
+  function slidesFrom(cfg){
+    const s=[];
+    if(cfg.hub) s.push({eb:'Free trading tools',big:pretty(cfg.hub),small:cfg.line||'',url:tagUrl(cfg.hub,'stream','qr')});
+    if(cfg.sluser) s.push({eb:'Support the stream',big:'Tip jar',small:'Tips keep the tools free',url:'https://streamlabs.com/'+encodeURIComponent(cfg.sluser.trim())+'/tip',tip:true});
+    if(cfg.deals) s.push({eb:'Deals & savings',big:pretty(cfg.deals),small:'The tools and platforms I use',url:tagUrl(cfg.deals,'stream','qr')});
+    return s;
+  }
+
+  // ---- overlay engine: mounts into a stage element ----
+  function Overlay(stage,cfg){
+    stage.innerHTML='';
+    stage.appendChild($('ovTpl').content.cloneNode(true));
+    const ov=stage.querySelector('.ov'), qrEl=ov.querySelector('.qr'), bar=ov.querySelector('.bar i');
+    const al=stage.querySelector('.alert');
+    ov.className='ov pos-'+(cfg.pos||'br');
+    const size=+cfg.qrsize||170;
+    const cv=document.createElement('canvas'); qrEl.appendChild(cv);
+    function drawQR(text){
+      const q=qrcode(0,'M'); q.addData(text); q.make();
+      const n=q.getModuleCount(), cell=Math.max(2,Math.floor(size/n)), px=cell*n;
+      cv.width=px; cv.height=px; cv.style.width=size+'px'; cv.style.height=size+'px';
+      const g=cv.getContext('2d'); g.imageSmoothingEnabled=false;
+      g.fillStyle='#fbf7ef'; g.fillRect(0,0,px,px); g.fillStyle='#121110';
+      for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(q.isDark(r,c)) g.fillRect(c*cell,r*cell,cell,cell);
+    }
+    const slides=slidesFrom(cfg);
+    let i=0, rotT=null, hideT=null, cycleT=null, alT=null;
+    const rot=(+cfg.rot||15)*1000, every=(+cfg.every||0)*60000, dur=(+cfg.dur||45)*1000;
+
+    function paint(s){
+      ov.querySelector('.eb').textContent=s.eb;
+      ov.querySelector('.big').textContent=s.big;
+      ov.querySelector('.small').textContent=s.small;
+      ov.querySelector('.small').hidden=!s.small;
+      try{ drawQR(s.url) }catch(e){ qrEl.textContent='QR' }
+      bar.style.transition='none';bar.style.width='0';
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{bar.style.transition='width '+rot+'ms linear';bar.style.width='100%'}));
+    }
+    function startRotation(){
+      clearInterval(rotT);
+      if(!slides.length) return;
+      paint(slides[i%slides.length]);
+      if(slides.length>1) rotT=setInterval(()=>{i++;paint(slides[i%slides.length])},rot);
+    }
+    function show(ms){
+      ov.classList.add('show');
+      clearTimeout(hideT);
+      if(every>0 && ms) hideT=setTimeout(()=>ov.classList.remove('show'),ms);
+    }
+    function boot(){
+      startRotation();
+      if(every===0){show(0)}
+      else{show(dur);cycleT=setInterval(()=>{i=0;startRotation();show(dur)},every)}
+    }
+    function alert(title,sub,jumpToTip){
+      al.querySelector('.at').textContent=title;
+      al.querySelector('.as').textContent=sub||'';
+      al.classList.add('show');
+      clearTimeout(alT);alT=setTimeout(()=>al.classList.remove('show'),7000);
+      const t=slides.findIndex(s=>s.tip);
+      if(jumpToTip && t>=0){i=t;startRotation()}
+      show(Math.max(dur,20000));
+    }
+    function destroy(){clearInterval(rotT);clearTimeout(hideT);clearInterval(cycleT);clearTimeout(alT)}
+    boot();
+    return {alert,destroy};
+  }
+
+  // ---- Streamlabs socket (only when a token is given) ----
+  function connectStreamlabs(token,ovl){
+    if(!token) return;
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js';
+    s.onload=()=>{
+      const sock=io('https://sockets.streamlabs.com?token='+encodeURIComponent(token),{transports:['websocket']});
+      sock.on('event',e=>{
+        if(!e||!e.message) return;
+        const m=Array.isArray(e.message)?e.message[0]:e.message;
+        if(!m) return;
+        const name=m.name||m.from||'Someone';
+        if(e.type==='donation'){
+          ovl.alert('Thanks '+name+'!', (m.formatted_amount||('$'+m.amount))+' tip — it keeps the tools free',true);
+        } else if(e.type==='follow'){
+          ovl.alert('Welcome '+name+'!','Free tools at buyittradeit.com',false);
+        } else if(e.type==='subscription'||e.type==='membership'||e.type==='superchat'){
+          ovl.alert('Thanks '+name+'!','Appreciate the support',true);
+        }
+      });
+    };
+    document.head.appendChild(s);
+  }
+
+  // ===== OBS MODE =====
+  if(OBS){
+    document.body.classList.add('obs');
+    $('builder').remove();
+    const stage=document.createElement('div');stage.className='stage';document.body.appendChild(stage);
+    const cfg={};FIELDS.forEach(k=>cfg[k]=P.get(k)||'');
+    if(!cfg.hub && !cfg.sluser && !cfg.deals) cfg.hub='https://buyittradeit.com';
+    const ovl=Overlay(stage,cfg);
+    connectStreamlabs(P.get('sl')||'',ovl);
+    return;
+  }
+
+  // ===== BUILDER MODE =====
+  const saved=store.get('ovl_cfg',null);
+  if(saved) FIELDS.forEach(k=>{if(saved[k]!=null&&$(k)) $(k).value=saved[k]});
+  $('qrsizeVal').textContent=$('qrsize').value;
+
+  const pv=$('pv'), stage=$('pvStage');
+  function fit(){const w=pv.clientWidth;stage.style.transform='scale('+(w/1920)+')';drawChart()}
+  let ovl=null;
+  function cfg(){const c={};FIELDS.forEach(k=>c[k]=$(k).value.trim());return c}
+  function obsLink(){
+    const c=cfg(), q=new URLSearchParams({obs:'1'});
+    FIELDS.forEach(k=>{if(c[k]) q.set(k,c[k])});
+    const tok=$('sltoken').value.trim(); if(tok) q.set('sl',tok);
+    return location.href.split('?')[0].split('#')[0]+'?'+q.toString();
+  }
+  function refresh(){
+    const c=cfg();
+    store.set('ovl_cfg',c);
+    if(ovl) ovl.destroy();
+    // preview always visible so you can see it
+    ovl=Overlay(stage,Object.assign({},c,{every:'0'}));
+    const link=obsLink();
+    const tok=$('sltoken').value.trim();
+    $('obsUrl').textContent=tok?link.replace(encodeURIComponent(tok),'••••••••'):link;
+    $('openUrl').href=link;
+  }
+  FIELDS.concat(['sltoken']).forEach(k=>$(k).addEventListener('input',()=>{ if(k==='qrsize') $('qrsizeVal').textContent=$('qrsize').value; refresh(); }));
+  $('form').addEventListener('submit',e=>e.preventDefault());
+  $('testTip').addEventListener('click',()=>ovl&&ovl.alert('Thanks TraderMike!','$5.00 tip — it keeps the tools free',true));
+  $('testFollow').addEventListener('click',()=>ovl&&ovl.alert('Welcome NQ_Nate!','Free tools at buyittradeit.com',false));
+
+  let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1800)}
+  $('copyUrl').addEventListener('click',()=>{
+    const link=obsLink();
+    const sel=()=>{const r=document.createRange();r.selectNodeContents($('obsUrl'));const s=getSelection();s.removeAllRanges();s.addRange(r)};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(link).then(()=>toast('OBS link copied')).catch(()=>{sel();toast('Selected. Press Ctrl+C to copy')})}
+    else{sel();toast('Selected. Press Ctrl+C to copy')}
+  });
+
+  // fake candles for the preview backdrop
+  function drawChart(){
+    const c=$('chart'),r=pv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+    c.width=r.width*dpr;c.height=r.height*dpr;const g=c.getContext('2d');g.scale(dpr,dpr);
+    let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
+    const n=70,w=r.width/n;let p=r.height*.55;
+    for(let k=0;k<n;k++){
+      const o=p,cl=o+(rnd()-.52)*r.height*.06,hi=Math.min(o,cl)-rnd()*r.height*.03,lo=Math.max(o,cl)+rnd()*r.height*.03;
+      const up=cl<o;g.strokeStyle=g.fillStyle=up?'#3fb27f':'#d9534f';
+      const x=k*w+w/2;g.beginPath();g.moveTo(x,hi);g.lineTo(x,lo);g.stroke();
+      g.fillRect(x-w*.3,Math.min(o,cl),w*.6,Math.max(1,Math.abs(cl-o)));p=Math.max(r.height*.15,Math.min(r.height*.85,cl));
+    }
+  }
+  window.addEventListener('resize',fit);
+  refresh();fit();
+})();
+</script>
+</body>
+</html>

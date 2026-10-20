@@ -49,6 +49,10 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
 .recent button{background:var(--panel-2);border:1px solid var(--line);color:var(--muted);font:12px var(--f-mono);padding:4px 8px;border-radius:3px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .recent button:hover{color:var(--fg)}
 .slips{display:grid;gap:12px}
+nav.top{display:flex;flex-wrap:wrap;gap:6px}
+nav.top a{font:500 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:3px;padding:4px 10px}
+nav.top a[aria-current=page]{color:var(--amber-ink);background:var(--amber);border-color:var(--amber)}
+nav.top a:hover{color:var(--fg)}
 .slip{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:4px;padding:14px;display:grid;gap:10px;min-width:0}
 .slip.over{border-left-color:var(--live)}
 .slip-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:center}
@@ -76,6 +80,9 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
 <body>
 
 <div class="wrap">
+  <nav class="top" aria-label="Go-Live Poster tools">
+    <a href="./" aria-current="page">Poster</a><a href="recap.html">Recap</a><a href="overlay.html">Stream overlay</a>
+  </nav>
   <header>
     <div>
       <h1>Go-Live <span>Poster</span></h1>
@@ -476,6 +483,15 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
   if(prefs){ if(prefs.tags) $('tags').value=prefs.tags; if(prefs.hub) $('hub').value=prefs.hub; }
   ['tags','hub'].forEach(id=>$(id).addEventListener('change',()=>store.set('glp_prefs',{tags:$('tags').value,hub:$('hub').value})));
 
+  // pick up a post sent over from the Recap page
+  const h=store.get('glp_handoff',null);
+  if(h && Date.now()-(h.at||0) < 30*60000){
+    $('url').value=h.url||''; $('title').value=h.title||''; $('extra').value=h.extra||'';
+    if(h.tags) $('tags').value=h.tags;
+    setKind(h.kind||'replay');
+    try{localStorage.removeItem('glp_handoff')}catch(e){}
+    setTimeout(()=>toast('Recap loaded. Hit Post everywhere'),300);
+  }
   drawRecent();
   render();
 })();
