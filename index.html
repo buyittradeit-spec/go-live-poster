@@ -62,6 +62,8 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
 .btn.primary{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
 .btn.primary:hover{filter:brightness(1.08)}
 .note{font-size:12px;color:var(--muted)}
+.sched{border-top:1px solid var(--line);padding-top:12px}
+input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:9px 10px;font:inherit;font-size:14px}
 .tick{display:none;font:500 11px var(--f-mono);letter-spacing:.08em;color:var(--ok);border:1px solid var(--ok);border-radius:3px;padding:1px 6px;margin-left:6px;vertical-align:middle}
 .slip.done .tick{display:inline-block}
 .slip.done{border-left-color:var(--ok)}
@@ -124,6 +126,18 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
       <label class="chk"><input type="checkbox" id="utm" checked><span>Tag links per platform (adds <code>?utm_source=x</code> etc.) so your site stats show which post brought each visitor.</span></label>
       <label class="chk"><input type="checkbox" id="useHub" checked><span>Include hub link in longer posts</span></label>
 
+      <div class="sched">
+        <label class="chk"><input type="checkbox" id="schedOn"><span><strong>Schedule for later.</strong> Posts say when you go live, Open buttons copy the text first, and you can add a phone reminder.</span></label>
+        <div id="schedBox" hidden>
+          <label class="label" for="when">Go-live / post time</label>
+          <input type="datetime-local" id="when">
+          <div class="actions" style="margin-top:8px">
+            <button type="button" class="btn" id="ics">Add reminder to my calendar</button>
+          </div>
+          <p class="note" id="schedNote">On X, tap the calendar icon in the post box to pick the time. YouTube and Rumble set it under Visibility when you upload.</p>
+        </div>
+      </div>
+
       <div>
         <span class="label">Recent links</span>
         <div class="recent" id="recent"><span class="note">Links you post appear here.</span></div>
@@ -179,6 +193,12 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
     {id:'ig', name:'Instagram Reels upload', video:true, shorts:true, src:'instagram',
       open:()=>'https://www.instagram.com/', openLabel:'Open Instagram',
       openNote:'Upload kit: post as a Reel. Links in captions are not clickable, so say "link in bio" and put buyittradeit.com in your bio.'},
+    {id:'yt', name:'YouTube upload', video:true, src:'youtube',
+      open:()=>'https://studio.youtube.com/', openLabel:'Open YouTube Studio',
+      openNote:'Upload kit: in Studio click Create → Upload videos. To schedule, pick Schedule under Visibility.'},
+    {id:'rum', name:'Rumble upload', video:true, src:'rumble',
+      open:()=>'https://rumble.com/upload.php', openLabel:'Open Rumble upload',
+      openNote:'Upload kit: paste the title and description, add the tags, then set visibility or a publish time before you finish.'},
     {id:'dm', name:'Dailymotion upload', video:true, src:'dailymotion',
       open:()=>'https://www.dailymotion.com/', openLabel:'Open Dailymotion',
       openNote:'Upload kit: copy each field into the upload form, then attach your video file there.'},
@@ -227,8 +247,9 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
     const hub = $('useHub').checked && $('hub').value.trim() ? tag($('hub').value.trim(), p.src) : '';
     const on = where && !/BuyIt/.test(where) ? ' on '+where : '';
 
+    const sched = $('schedOn').checked && $('when').value;
     const lead = {
-      live:'🔴 LIVE NOW'+on+': '+title,
+      live: sched ? '⏰ Going live '+fmtWhen()+on+': '+title : '🔴 LIVE NOW'+on+': '+title,
       replay:'Missed it? Replay is up'+on+': '+title,
       clip:title,
       tool:'New free tool: '+title,
@@ -253,6 +274,15 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
     return lines.join('\n\n');
   }
 
+  function fmtWhen(){
+    const v=$('when').value; if(!v) return '';
+    const d=new Date(v), now=new Date();
+    const time=d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})+' ET';
+    const same=d.toDateString()===now.toDateString();
+    const tmr=new Date(now); tmr.setDate(now.getDate()+1);
+    const day= same ? 'today' : d.toDateString()===tmr.toDateString() ? 'tomorrow' : d.toLocaleDateString([], {weekday:'long'});
+    return day+' at '+time;
+  }
   function xLen(s){ return s.replace(/https?:\/\/\S+/g,'x'.repeat(23)).length; }
   function lenFor(p,s){ return p.id==='x' ? xLen(s) : s.length; }
 
@@ -285,7 +315,9 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
           acts.appendChild(b);
         });
         const a=document.createElement('a'); a.className='btn primary'; a.target='_blank'; a.rel='noopener';
-        a.textContent=p.openLabel; a.href=p.open(); acts.appendChild(a);
+        a.textContent=p.openLabel+' (copies description)'; a.href=p.open();
+        a.addEventListener('click',()=>{ const f=el.querySelector('#t_'+p.id); copyText(f.value,'Description copied, paste it in',f); });
+        acts.appendChild(a);
         host.appendChild(el);
         return;
       }
@@ -324,7 +356,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
         a = document.createElement('a');
         a.className='btn primary'; a.target='_blank'; a.rel='noopener';
         a.textContent='Open in '+p.name.split(' /')[0];
-        a.addEventListener('click', ()=>{ remember(raw); markDone(p.id); if(p.copyFirst) copyText(ta.value,'Text copied, paste it into '+p.name,ta); });
+        a.addEventListener('click', ()=>{ remember(raw); markDone(p.id); if(p.copyFirst || $('schedOn').checked) copyText(ta.value,'Text copied, paste it into '+p.name,ta); });
         acts.appendChild(a);
         refreshLink();
       }
@@ -393,6 +425,37 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
   ['url','title','extra','tags','hub','utm','useHub'].forEach(id=>$(id).addEventListener('input',()=>{ clearEdits(); render(); }));
   $('utm').addEventListener('change',()=>{ clearEdits(); render(); });
   $('useHub').addEventListener('change',()=>{ clearEdits(); render(); });
+  function defaultWhen(){
+    const d=new Date(); d.setDate(d.getDate()+1); d.setHours(9,30,0,0);
+    const pad=n=>String(n).padStart(2,'0');
+    return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+  }
+  $('schedOn').addEventListener('change',()=>{
+    $('schedBox').hidden=!$('schedOn').checked;
+    if($('schedOn').checked && !$('when').value) $('when').value=defaultWhen();
+    clearEdits(); render();
+  });
+  $('when').addEventListener('input',()=>{ clearEdits(); render(); });
+  $('ics').addEventListener('click',()=>{
+    if(!$('when').value){ toast('Pick a time first'); return; }
+    const d=new Date($('when').value);
+    const z=x=>x.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+    const end=new Date(d.getTime()+30*60000);
+    const esc=t=>t.replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
+    const body=PLATFORMS.filter(p=>$('t_'+p.id) && !p.video).map(p=>p.name+':\n'+$('t_'+p.id).value).join('\n\n');
+    const page=location.href.split('#')[0];
+    const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//BuyItTradeIt//Go-Live Poster//EN','BEGIN:VEVENT',
+      'UID:'+Date.now()+'@go-live-poster','DTSTAMP:'+z(new Date()),'DTSTART:'+z(d),'DTEND:'+z(end),
+      'SUMMARY:'+esc('Post: '+($('title').value.trim()||'stream')),
+      'DESCRIPTION:'+esc('Open the poster: '+page+'\n\n'+body),'URL:'+page,
+      'BEGIN:VALARM','TRIGGER:-PT5M','ACTION:DISPLAY','DESCRIPTION:Time to post','END:VALARM',
+      'BEGIN:VALARM','TRIGGER:PT0M','ACTION:DISPLAY','DESCRIPTION:Post now','END:VALARM',
+      'END:VEVENT','END:VCALENDAR'].join('\r\n');
+    const blob=new Blob([ics],{type:'text/calendar'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='go-live-reminder.ics';
+    document.body.appendChild(a); a.click(); a.remove();
+    toast('Reminder downloaded, open it to add to your calendar');
+  });
   $('form').addEventListener('submit', e=>e.preventDefault());
   $('walk').addEventListener('click', e=>{
     const w=$('walk');
@@ -400,7 +463,7 @@ input:focus,textarea:focus,select:focus,button:focus-visible,a:focus-visible{out
     const id=nextId(); if(!id) return;
     const p=PLATFORMS.find(x=>x.id===id), s=shareFns[id]();
     remember($('url').value.trim());
-    if(p.copyFirst) copyText(s.text,'Text copied, paste it into '+p.name,s.ta);
+    if(p.copyFirst || $('schedOn').checked) copyText(s.text,'Text copied, paste it into '+p.name,s.ta);
     markDone(id);
   });
   $('copyAll').addEventListener('click',()=>{
