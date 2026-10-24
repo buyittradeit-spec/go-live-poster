@@ -6,7 +6,7 @@ A one-page helper for BuyItTradeIt streams and uploads. Paste a stream or video 
 
 - X, Bluesky, Threads, Facebook, Pinterest, Reddit: a post sized for each platform, with Copy and Open buttons
 - Discord / YouTube community: a longer post to paste in
-- Upload your video section: title, description and tags kits for YouTube, Rumble, Odysee, Dailymotion and Twitch (plus YouTube Shorts, TikTok and Reels for clips), with toggles to pick which sites show
+- Video upload kits: title, description and tags ready to paste into each site's upload page (YouTube, Rumble, Odysee, Dailymotion, Twitch, plus Shorts, TikTok and Reels for clips). You attach the video file on each site yourself; the page never uploads it.
 - Optional per-platform link tags (`utm_source`) so site stats show which post sent each visitor
 
 No server, no API keys, no AI calls. The page keeps only your last 8 links and your hashtags in your own browser.
