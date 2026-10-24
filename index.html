@@ -88,6 +88,15 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
 .toast.show{opacity:1}
 .bulk{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;background:var(--panel-2);border:1px dashed var(--line);border-radius:4px;padding:10px 12px}
 .bulk p{margin:0;font-size:13px;color:var(--muted)}
+.uploads{display:grid;gap:12px;margin-top:8px;scroll-margin-top:16px}
+.up-head{display:grid;gap:10px;background:var(--panel-2);border:1px dashed var(--line);border-radius:4px;padding:12px}
+.up-head h2{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.06em;text-transform:uppercase;margin:0}
+.up-head h2 span{color:var(--amber)}
+.up-head p{margin:0;font-size:13px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{background:var(--bg);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font:500 12px var(--f-body);cursor:pointer}
+.chips button[aria-pressed=true]{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
+.slip.vid{border-left-color:#7aa7ff}
 </style>
 </head>
 <body>
@@ -176,9 +185,23 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
         <div class="actions">
           <a class="btn primary" id="walk" target="_blank" rel="noopener" href="#">Post everywhere</a>
           <button type="button" class="btn" id="copyAll">Copy all posts</button>
+          <a class="btn" href="#uploads">Upload video kits ↓</a>
         </div>
       </div>
       <div id="slips" class="slips"></div>
+
+      <section class="uploads" id="uploads" aria-labelledby="upTitle">
+        <div class="up-head">
+          <h2 id="upTitle">Upload your <span>video</span></h2>
+          <p>Uploading the file itself? Each kit below has the title, description and tags ready. Copy each field, open the upload page, attach your video and paste.</p>
+          <div>
+            <span class="label">Upload to</span>
+            <div class="chips" id="upPick"></div>
+          </div>
+          <p class="note" id="upShortsNote"></p>
+        </div>
+        <div id="upSlips" class="slips"></div>
+      </section>
     </section>
   </div>
 </div>
@@ -212,31 +235,31 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
     {id:'reddit', name:'Reddit', limit:300, short:true, src:'reddit', titleOnly:true,
       open:(t,u)=>'https://www.reddit.com/submit?url='+encodeURIComponent(u)+'&title='+encodeURIComponent(t)},
     {id:'discord', name:'Discord / YouTube community', limit:2000, short:false, src:'discord', open:null},
-    {id:'yts', name:'YouTube Shorts upload', video:true, shorts:true, src:'youtube',
+    {id:'yts', upload:true, name:'YouTube Shorts upload', video:true, shorts:true, src:'youtube',
       open:()=>'https://studio.youtube.com/', openLabel:'Open YouTube Studio',
       openNote:'Upload kit: vertical video under 60 seconds. In Studio click Create → Upload videos, then paste these fields.'},
-    {id:'tt', name:'TikTok upload', video:true, shorts:true, src:'tiktok',
+    {id:'tt', upload:true, name:'TikTok upload', video:true, shorts:true, src:'tiktok',
       open:()=>'https://www.tiktok.com/upload', openLabel:'Open TikTok upload',
       openNote:'Upload kit: TikTok uses one caption, so paste the description and add the tags at the end.'},
-    {id:'ig', name:'Instagram Reels upload', video:true, shorts:true, src:'instagram',
+    {id:'ig', upload:true, name:'Instagram Reels upload', video:true, shorts:true, src:'instagram',
       open:()=>'https://www.instagram.com/', openLabel:'Open Instagram',
       openNote:'Upload kit: post as a Reel. Links in captions are not clickable, so say "link in bio" and put your site in your bio.'},
-    {id:'yt', name:'YouTube upload', video:true, src:'youtube',
+    {id:'yt', upload:true, name:'YouTube upload', video:true, src:'youtube',
       open:()=>'https://studio.youtube.com/', openLabel:'Open YouTube Studio',
       openNote:'Upload kit: in Studio click Create → Upload videos. To schedule, pick Schedule under Visibility.'},
-    {id:'rum', name:'Rumble upload', video:true, src:'rumble',
+    {id:'rum', upload:true, name:'Rumble upload', video:true, src:'rumble',
       open:()=>'https://rumble.com/upload.php', openLabel:'Open Rumble upload',
       openNote:'Upload kit: paste the title and description, add the tags, then set visibility or a publish time before you finish.'},
     {id:'kick', name:'Kick stream info', video:true, src:'kick', descLabel:'Chat message to pin',
       open:()=>'https://dashboard.kick.com/', openLabel:'Open Kick dashboard',
       openNote:'Stream kit: paste the title into Stream Info before you go live, then pin the chat message once you are on air.'},
-    {id:'ody', name:'Odysee upload', video:true, src:'odysee',
+    {id:'ody', upload:true, name:'Odysee upload', video:true, src:'odysee',
       open:()=>'https://odysee.com/$/upload', openLabel:'Open Odysee upload',
       openNote:'Upload kit: paste the title, description and tags, then attach your video. Odysee also accepts the same file you post to Rumble.'},
-    {id:'dm', name:'Dailymotion upload', video:true, src:'dailymotion',
+    {id:'dm', upload:true, name:'Dailymotion upload', video:true, src:'dailymotion',
       open:()=>'https://www.dailymotion.com/', openLabel:'Open Dailymotion',
       openNote:'Upload kit: copy each field into the upload form, then attach your video file there.'},
-    {id:'tw', name:'Twitch video upload', video:true, src:'twitch',
+    {id:'tw', upload:true, name:'Twitch video upload', video:true, src:'twitch',
       open:()=>'https://dashboard.twitch.tv/', openLabel:'Open Twitch dashboard',
       openNote:'Upload kit: in the dashboard go to Content → Video Producer → Upload, then paste these fields.'}
   ];
@@ -326,21 +349,43 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
   function xLen(s){ return s.replace(/https?:\/\/\S+/g,'x'.repeat(23)).length; }
   function lenFor(p,s){ return p.id==='x' ? xLen(s) : s.length; }
 
+  // which upload sites to show; saved in this browser
+  let upOff = new Set(store.get('glp_upoff', []));
+  function upOn(id){ return !upOff.has(id); }
+  function drawPicks(){
+    const box=$('upPick'); box.innerHTML='';
+    const shortsOk = kind==='music' || kind==='clip';
+    PLATFORMS.filter(p=>p.upload && (!p.shorts || shortsOk)).forEach(p=>{
+      const b=document.createElement('button'); b.type='button';
+      b.textContent=p.name.replace(/ (video )?upload$/i,'');
+      b.setAttribute('aria-pressed', upOn(p.id));
+      b.onclick=()=>{ upOn(p.id) ? upOff.add(p.id) : upOff.delete(p.id); store.set('glp_upoff',[...upOff]); render(); };
+      box.appendChild(b);
+    });
+    $('upShortsNote').textContent = shortsOk
+      ? 'Shorts, TikTok and Reels kits are on because this is a short clip or music video. They need a vertical video under 60 seconds.'
+      : 'Posting a vertical short? Pick Short clip or Music video as the post type to add YouTube Shorts, TikTok and Reels kits.';
+    if(!$('upSlips').children.length && ![...box.children].some(b=>b.getAttribute('aria-pressed')==='true'))
+      $('upShortsNote').textContent = 'Turn on a site above to get its upload kit.';
+  }
+
   function render(){
     const raw = $('url').value.trim();
     const d = detect(raw);
     $('detected').textContent = raw ? (d ? 'Detected: '+d : 'Link looks custom; posts will still work') : 'Paste a link to start';
     $('statusText').textContent = kind==='live' ? 'Ready to go live' : 'Ready to post';
-    const host = $('slips');
-    host.innerHTML = '';
+    const host = $('slips'), upHost = $('upSlips');
+    host.innerHTML = ''; upHost.innerHTML = '';
+    drawPicks();
     for(const k in shareFns) delete shareFns[k];
     PLATFORMS.forEach(p=>{
       if(p.shorts && kind!=='music' && kind!=='clip') return;
+      if(p.upload && !upOn(p.id)) return;
       if(p.video){
         const k=kit(p);
         const el=document.createElement('article');
-        el.className='slip';
-        el.innerHTML='<div class="slip-head"><h2>'+p.name+'</h2><span class="count">video kit</span></div>'+
+        el.className='slip'+(p.upload?' vid':'');
+        el.innerHTML='<div class="slip-head"><h2>'+p.name+'</h2><span class="count">'+(p.upload?'upload kit':'stream kit')+'</span></div>'+
           '<div><span class="label">Title</span><input type="text" id="t_'+p.id+'_title"></div>'+
           '<div><span class="label">'+(p.descLabel||'Description')+'</span><textarea id="t_'+p.id+'" rows="5"></textarea></div>'+
           '<div><span class="label">Tags</span><input type="text" id="t_'+p.id+'_tags"></div>'+
@@ -358,7 +403,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
         a.textContent=p.openLabel+' (copies '+(p.descLabel?'title':'description')+')'; a.href=p.open();
         a.addEventListener('click',()=>{ const f=el.querySelector('#t_'+p.id+(p.descLabel?'_title':'')); copyText(f.value,(p.descLabel?'Title':'Description')+' copied, paste it in',f); });
         acts.appendChild(a);
-        host.appendChild(el);
+        (p.upload ? upHost : host).appendChild(el);
         return;
       }
       const text = edited[p.id] ?? build(p);
