@@ -30,4 +30,17 @@ window.GLP = {
     f.innerHTML = html;
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', footer); else footer();
+
+  // Keep the Poster / Recap / Overlay tabs in the same folder as the current page.
+  // Netlify's pretty URLs rewrite them to /recap and /overlay, which breaks them
+  // when the poster is served from buyittradeit.com/poster/.
+  function fixTabs() {
+    var base = location.href.replace(/[?#].*$/, '').replace(/[^\/]*$/, '');
+    var links = document.querySelectorAll('nav.top a');
+    for (var i = 0; i < links.length; i++) {
+      var m = (links[i].getAttribute('href') || '').match(/^(?:\.\/|\/)?(recap|overlay)(?:\.html)?$/);
+      if (m) links[i].href = base + m[1];
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fixTabs); else fixTabs();
 })();
