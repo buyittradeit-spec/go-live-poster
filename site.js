@@ -43,4 +43,21 @@ window.GLP = {
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fixTabs); else fixTabs();
+
+  // "Back to BuyItTradeIt" button at the end of the tab row on every page.
+  function backLink() {
+    var nav = document.querySelector('nav.top');
+    if (!nav || nav.querySelector('.back-home')) return;
+    nav.style.alignItems = 'center';
+    nav.style.width = '100%';
+    var a = document.createElement('a');
+    a.className = 'back-home';
+    a.href = tagged(window.GLP.site, 'back-button');
+    a.textContent = '← Back to BuyItTradeIt';
+    a.style.marginLeft = 'auto';
+    a.style.color = 'var(--amber)';
+    a.style.borderColor = 'var(--amber)';
+    nav.appendChild(a);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', backLink); else backLink();
 })();
