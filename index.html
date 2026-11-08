@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>BuyItTradeIt Go-Live Poster</title>
+<title>Go-Live Poster by BuyitStreams™</title>
+<meta name="description" content="Free Go-Live Poster by BuyitStreams: one link, a ready post for every channel. Plus the BuyitStreams editor to turn streams into Shorts, TikToks and Reels in your browser.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -97,6 +98,23 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
 .chips button{background:var(--bg);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font:500 12px var(--f-body);cursor:pointer}
 .chips button[aria-pressed=true]{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
 .slip.vid{border-left-color:#7aa7ff}
+.bs-by{margin:4px 0 0;font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.04em}
+.bs-by a{color:#22c55e;text-decoration:none;font-weight:600}
+.bs-promo{max-width:1180px;margin:28px auto 0;border:1px solid #22c55e55;border-radius:14px;padding:22px 24px;
+  background:linear-gradient(135deg,#0f1a12 0%,var(--panel) 60%);display:grid;gap:14px;grid-template-columns:1.3fr 1fr;align-items:center}
+.bs-promo h2{font-family:var(--f-display);font-size:clamp(22px,3vw,30px);margin:0;text-transform:uppercase;letter-spacing:.02em}
+.bs-promo h2 b{color:#22c55e}
+.bs-mark{display:inline-flex;width:26px;height:26px;border-radius:7px;background:#22c55e;color:#0b0b0e;align-items:center;justify-content:center;font-size:13px;margin-right:8px;vertical-align:3px}
+.bs-promo p{color:var(--muted);margin:6px 0 0}
+.bs-promo ul{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.bs-promo li::before{content:"✓  ";color:#22c55e;font-weight:700}
+.bs-cta{display:grid;gap:10px}
+.bs-btn{display:block;text-align:center;padding:12px 16px;border-radius:10px;font-weight:600;text-decoration:none;font-family:var(--f-body)}
+.bs-btn.free{background:#22c55e;color:#0b0b0e}
+.bs-btn.pro{border:1px solid #22c55e;color:#e9fbe9}
+.bs-btn.year{color:var(--muted);font-size:13px;padding:4px}
+.bs-small{font-size:12px;color:var(--muted);text-align:center}
+@media (max-width:760px){.bs-promo{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -108,6 +126,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
   <header>
     <div>
       <h1>Go-Live <span>Poster</span></h1>
+      <p class="bs-by">by <a href="#buyitstreams">BuyitStreams<sup>™</sup></a></p>
       <p class="sub">Paste your stream or video link once. Get a ready post for every channel, then copy or open each one. No AI, no server, nothing stored except your last few links on this device.</p>
     </div>
     <div class="status"><span class="dot" aria-hidden="true"></span><span id="statusText">Example loaded</span></div>
@@ -205,6 +224,24 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
     </section>
   </div>
 </div>
+  <section class="bs-promo" id="buyitstreams" aria-labelledby="bsTitle">
+    <div>
+      <h2 id="bsTitle"><span class="bs-mark" aria-hidden="true">▶</span>Turn your stream into <b>Shorts</b></h2>
+      <p>The <strong>BuyitStreams editor</strong> runs right in Chrome. Nothing to upload, nothing to install.</p>
+      <ul>
+        <li>One-click vertical layouts (facecam + gameplay, blurred background)</li>
+        <li>Ticker tape and label bars, fades, speed control to stretch AI clips</li>
+        <li>Record your screen + facecam, then cut and export</li>
+        <li>Free to use. Pro adds weekly templates and clips with no watermark</li>
+      </ul>
+    </div>
+    <div class="bs-cta">
+      <a class="bs-btn free" href="https://streamcut-5xz.pages.dev/" target="_blank" rel="noopener">Open the free editor</a>
+      <a class="bs-btn pro" href="https://buy.stripe.com/cNi28t9cj6CW7ezgry0gw00" target="_blank" rel="noopener">Go Pro · $7.99/mo</a>
+      <a class="bs-btn year" href="https://buy.stripe.com/eVq7sNewD3qK42na3a0gw01" target="_blank" rel="noopener">or $59.99/yr (save 37%)</a>
+      <div class="bs-small">Founding price · cancel anytime · works in Chrome or Edge on a computer</div>
+    </div>
+  </section>
   <footer class="credit" id="credit"></footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="site.js?v=6"></script>
