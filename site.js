@@ -35,7 +35,10 @@ window.GLP = {
   // Netlify's pretty URLs rewrite them to /recap and /overlay, which breaks them
   // when the poster is served from buyittradeit.com/poster/.
   function fixTabs() {
-    var base = location.href.replace(/[?#].*$/, '').replace(/[^\/]*$/, '');
+    var path = location.pathname;
+    // buyittradeit.com/poster (no trailing slash) must still resolve inside /poster/
+    if (/\/poster$/.test(path)) path += '/';
+    var base = location.origin + path.replace(/[^\/]*$/, '');
     var links = document.querySelectorAll('nav.top a');
     for (var i = 0; i < links.length; i++) {
       var m = (links[i].getAttribute('href') || '').match(/^(?:\.\/|\/)?(recap|overlay)(?:\.html)?$/);
