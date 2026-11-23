@@ -203,6 +203,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
         <p>Edit any post below, then hit Post everywhere. Each click opens the next site.</p>
         <div class="actions">
           <a class="btn primary" id="walk" target="_blank" rel="noopener" href="#">Post everywhere</a>
+          <button type="button" class="btn" id="shuffle" title="New wording for every post you haven't edited">Shuffle wording</button>
           <button type="button" class="btn" id="copyAll">Copy all posts</button>
           <a class="btn" href="#uploads">Video upload kits ↓</a>
         </div>
@@ -349,27 +350,61 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
 
   let kind = 'live';
   const edited = {};
+  let wordSeed = Math.floor(Math.random()*60);
 
   function build(p){
     const raw = $('url').value.trim();
     const where = detect(raw);
     const title = $('title').value.trim();
     const hook = $('extra').value.trim();
-    const tags = $('tags').value.trim();
+    const tagsAll = $('tags').value.trim();
     const link = tag(raw, p.src);
     const hub = $('useHub').checked && $('hub').value.trim() ? tag($('hub').value.trim(), p.src) : '';
     const on = where && !/BuyIt/.test(where) ? ' on '+where : '';
 
     const sched = $('schedOn').checked && $('when').value;
-    const lead = {
-      live: sched ? '⏰ Going live '+fmtWhen()+on+': '+title : '🔴 LIVE NOW'+on+': '+title,
-      replay:'Missed it? Replay is up'+on+': '+title,
-      clip:title,
-      tool:'New free tool: '+title,
-      music:'🎵 New track just dropped'+on+': '+title
-    }[kind];
+    // Each platform gets its own wording so 14 posts don't read like one bot post pasted everywhere
+    const W = fmtWhen();
+    const pools = {
+      live: sched ? [
+        '⏰ Going live '+W+on+': '+title,
+        'Set a reminder: live '+W+on+'. '+title,
+        title+', live '+W+on,
+        'Catch me live '+W+on+': '+title,
+        'Stream starts '+W+on+'. '+title
+      ] : [
+        '🔴 LIVE NOW'+on+': '+title,
+        'Live'+on+' right now: '+title,
+        'Stream is up'+on+'. '+title,
+        'On air'+on+': '+title,
+        'Going live'+on+'. '+title+'. Come hang out',
+        title+', live now'+on
+      ],
+      replay:['Missed it? Replay is up'+on+': '+title,'Replay'+on+': '+title,'In case you missed the stream: '+title,'Full session is up'+on+': '+title,title+', replay'+on],
+      clip:[title,'🎬 '+title,title+' 👀',title+' (clip)'],
+      tool:['New free tool: '+title,'Just shipped a free tool: '+title,'Free, no login: '+title,'Built this and it\'s free: '+title,'New on the site: '+title],
+      music:['🎵 New track just dropped'+on+': '+title,'New song'+on+': '+title,'🎧 '+title+' is out'+on,'Fresh track'+on+': '+title]
+    };
+    const ctas = {
+      live:['Join here: ','Watch live: ','Come through: ','Pull up: '],
+      tool:['Try it: ','Use it free: ','Here it is: '],
+      music:['Listen: ','Play it: ','Hear it here: ']
+    };
+    const ORDER = ['x','bsky','threads','masto','fb','tumblr','li','reddit','pin','flip','tg','quora','ihub','kofi','discord'];
+    const oi = ORDER.indexOf(p.id);
+    const pi = (oi>=0 ? oi : PLATFORMS.indexOf(p)) + wordSeed;
+    const pick = arr => arr[((pi % arr.length) + arr.length) % arr.length];
+    const lead = pick(pools[kind]);
+    const cta = pick(ctas[kind] || ['Watch: ','Catch it here: ','Full video: ']);
+    const cap = {x:2, bsky:3, threads:1, masto:5}[p.id];
+    let tags = tagsAll;
+    if(tagsAll){
+      const t = tagsAll.split(/\s+/).filter(Boolean), r = ((pi % t.length) + t.length) % t.length;
+      const rot = t.slice(r).concat(t.slice(0,r));
+      tags = (cap ? rot.slice(0,cap) : rot).join(' ');
+    }
 
-    if(p.titleOnly) return lead.replace(/^🔴 /,'');
+    if(p.titleOnly) return lead.replace(/^[^A-Za-z0-9]+\s/,'');
 
     if(p.short){
       let body = [lead, hook, link, tags].filter(Boolean).join('\n\n');
@@ -381,7 +416,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
     }
     const lines = [lead];
     if(hook) lines.push(hook);
-    lines.push((kind==='live'?'Join here: ':kind==='tool'?'Try it: ':kind==='music'?'Listen: ':'Watch: ')+link);
+    lines.push(cta+link);
     if(hub) lines.push('All my tools and channels: '+hub);
     if(tags && p.id!=='discord') lines.push(tags);
     return lines.join('\n\n');
@@ -571,6 +606,7 @@ input[type=datetime-local]{width:100%;background:var(--bg);color:var(--fg);borde
     clearEdits(); render();
   });
   $('when').addEventListener('input',()=>{ clearEdits(); render(); });
+  $('shuffle').addEventListener('click',()=>{ wordSeed += 1 + Math.floor(Math.random()*5); render(); toast('New wording for every post you haven\'t edited'); });
   $('ics').addEventListener('click',()=>{
     if(!$('when').value){ toast('Pick a time first'); return; }
     const d=new Date($('when').value);
